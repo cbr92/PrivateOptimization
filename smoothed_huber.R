@@ -5,12 +5,20 @@
 #### This is achieved by using a cubic polynomial
 #### to interpolate between the points (k,1)
 #### and (k+h,0) (and analogously for neative x).
+#### This cubic polynomial is unique given the
+#### constraint that it be continuously
+#### differentiable. From there, the first
+#### derivative of the smoothed Huber loss and
+#### the smoothed Huber loss itself are also
+#### uniquely determined by the requirement that
+#### both be continuously differentiable.
 
 #### The functions begin with the second derivative
 #### of the smoothed Huber loss, followed by the
 #### first derivative of smoothed Huber loss,
 #### then the smoothed Huber loss itself. The third
 #### derivative is also included for completeness.
+
 
 
 
