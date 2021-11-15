@@ -174,7 +174,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     
     sandwich<-solve(outer_term)%*%middle_term%*%t(solve(outer_term))
     
-    alt_sandwich<-(sandwich/n)+(noise^2)*diag(p)*(eta^2) #values on the diagonal of this matrix are corrected variances for the components of the beta vector
+    corrected_variances<-(sandwich/n)+(noise^2)*diag(p)*(eta^2) #values on the diagonal of this matrix are corrected variances for the components of the beta vector
   
   }
   
@@ -302,7 +302,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     
     sandwich<-solve(outer_term)%*%middle_term%*%t(solve(outer_term))
   
-    alt_sandwich2<-(sandwich/n)+(noise^2)*diag(p)*(eta^2)
+    corrected_variances<-(sandwich/n)+(noise^2)*diag(p)*(eta^2)
     
     
   }
@@ -323,7 +323,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
   out$middle=middle_term
   out$outer=outer_term
   out$sandwich=sandwich
-  out$alt_sandwich=alt_sandwich
+  out$variances=corrected_variances
   out$truncation=truncation
   out$gradtraj=grad_traj
   
