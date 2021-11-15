@@ -27,7 +27,7 @@ weightfn<-function(x){
 ####### gradient descent function ###########
 #############################################
 
-NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2])){
+NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]),stopping=0){
   n=length(x[,1])
   p=length(x[1,])
   grad<-1
@@ -44,7 +44,7 @@ NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]
   if(private==T){noise<-GS/(n*(mu/sqrt(maxiter+2)))} #the +2 is needed to get inference (M and Q) within the total mu privacy budget
   eps=max(eps,noise/2)
   
-  while(grad>eps & iter<maxiter){
+  while(grad>stopping*eps & iter<maxiter){
     iter<-iter+1
     
     
@@ -80,7 +80,7 @@ NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]
 
 
 
-Newton_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2])){
+Newton_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]),stopping=0){
   n=length(x[,1])
   p=length(x[1,])
   grad<-1
@@ -105,7 +105,7 @@ Newton_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)
   for(i in 1:n){beta_hessian<-beta_hessian+weightvec[i]*hessian_coefs[i]*(x[i,]%o%x[i,])}
   beta_hessian<-beta_hessian/n 
   
-  while(grad>eps & iter<maxiter & min(eigen(beta_hessian)$values)>1e-15){
+  while(grad>stopping*eps & iter<maxiter & min(eigen(beta_hessian)$values)>1e-15){
     iter<-iter+1
     
     ##sample the noise for the hessian (which will just be 0's if private=F)
