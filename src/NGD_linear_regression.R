@@ -42,7 +42,7 @@ weightfn<-function(x){
 #################
 # Main function
 
-NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,maxiter=100,eps=1e-5,beta0=rep(0,dim(x)[2]),s0=1,s.min=0.01)
+NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,maxiter=100,eps=1e-5,beta0=rep(0,dim(x)[2]),s0=1,s.min=0.01,stopping=0)
 {
     #y is a vector of length n
     #x is now an n by p matrix
@@ -78,7 +78,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     {
     eta=(1/(2*k))-0.001 # step size (is this value still appropriate?) no i think it's just eta<1 in this case, since L=1
     if(private==T) {
-      noise=2*sqrt(2)*k/(n*(mu/sqrt(maxiter))) #when scale is known, global sensitivity is 2*sqrt(2)*k/n
+      noise=2*sqrt(2)*k/(n*(mu/sqrt(maxiter+2))) #when scale is known, global sensitivity is 2*sqrt(2)*k/n
       eps=max(eps,noise)
     }
     
@@ -87,7 +87,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     grad_traj[1]<-sqrt(sum((colMeans(psi.vec*weightvec*x)^2))) #tracks the evolution of non-noisy gradient (in L2 norm)
     
     # this performs gradient descent to estimate beta (if private=T, the gradient descent is noisy)
-  while(iter<maxiter & grad > eps)
+  while(iter<maxiter & grad > stopping*eps)
     {
     iter=iter+1 
     
@@ -118,7 +118,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     outer_term<-outer_term/n #outer term as a matrix, we want the average
   
 
-    if(private==T) {outer_noise<-2/(n*(mu/sqrt(maxiter)))}
+    if(private==T) {outer_noise<-2/(n*(mu/sqrt(maxiter+2)))}
     outer_noisevec<-outer_noise*rnorm(p*(p-1)/2)
     
     outer_noisematrix<-matrix(0,nrow=p,ncol=p)
@@ -137,7 +137,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     
     
     #draw a vector of (appropriately scaled) random normal variables
-    if(private==T) {middle_noise<-2*(k^2)/(n*(mu/sqrt(maxiter)))}
+    if(private==T) {middle_noise<-2*(k^2)/(n*(mu/sqrt(maxiter+2)))}
     
     noisevec<-middle_noise*rnorm(p*(p-1)/2)
     
@@ -192,13 +192,13 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     
     if(private==T)
       {
-        noise=GS/(n*(mu/sqrt(maxiter))) 
+        noise=GS/(n*(mu/sqrt(maxiter+2))) 
         eps=max(eps,noise/2)
       }
     
     grad_traj[1]<-sqrt(sum((colMeans(psi.vec*weightvec*x)^2))+(sum.chi^2))
     
-    while(iter<maxiter & grad > eps ) 
+    while(iter<maxiter & grad > stopping*eps ) 
     {
       iter=iter+1 
       
@@ -244,7 +244,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     outer_term<-outer_term/n #outer term as a matrix, we want the average
     
     
-    if(private==T) {outer_noise<-2/(n*(mu/sqrt(maxiter)))}
+    if(private==T) {outer_noise<-2/(n*(mu/sqrt(maxiter+2)))}
     outer_noisevec<-outer_noise*rnorm(p*(p-1)/2)
     
     
@@ -266,7 +266,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     
     
     #draw a vector of (appropriately scaled) random normals
-    if(private==T) {middle_noise<-2*(k^2)/(n*(mu/sqrt(maxiter)))}
+    if(private==T) {middle_noise<-2*(k^2)/(n*(mu/sqrt(maxiter+2)))}
     
     noisevec<-middle_noise*rnorm(p*(p-1)/2)
     
