@@ -41,7 +41,7 @@ NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]
   
   GS<-sqrt(2)
   eta<-1 ### PLACEHOLDER-- think about what step size is appropriate
-  if(private==T){noise<-GS/(n*(mu/sqrt(maxiter)))}
+  if(private==T){noise<-GS/(n*(mu/sqrt(maxiter+2)))} #the +2 is needed to get inference (M and Q) within the total mu privacy budget
   eps=max(eps,noise/2)
   
   while(grad>eps & iter<maxiter){
