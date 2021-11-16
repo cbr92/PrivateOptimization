@@ -33,8 +33,8 @@ Fisher.constant <- function(k){ # computes Fisher consistency constant for Huber
 
 
 
-weightfn<-function(x){
-  return(min(1,2/(norm(x,type="2")^2)))
+weightfn<-function(x,max.norm=sqrt(2)){
+  return(min(1,(max.norm/norm(x,type="2")^2)))
 }
 
 
@@ -42,7 +42,7 @@ weightfn<-function(x){
 #################
 # Main function
 
-NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,maxiter=100,eps=1e-5,beta0=rep(0,dim(x)[2]),s0=1,s.min=0.01,stopping=0)
+NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,maxiter=100,eps=1e-5,beta0=rep(0,dim(x)[2]),s0=1,s.min=0.01,stopping=0,mnorm=sqrt(2))
 {
     #y is a vector of length n
     #x is now an n by p matrix
@@ -66,7 +66,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
   r=(y-as.vector(x%*%beta0))/s0
   psi.vec<-psiHuber(r,k)
   
-  weightvec<-apply(x,1,weightfn)
+  weightvec<-apply(x,1,weightfn,max.norm=mnorm)
   
   sum.chi=mean(((psiHuber(r,k)^2)-fisher_beta)*weightvec)/2 ##divide by 2 so psi and chi come from same objective function
   
@@ -78,7 +78,8 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     {
     eta=(1/(2*k))-0.001 # step size (is this value still appropriate?) no i think it's just eta<1 in this case, since L=1
     if(private==T) {
-      noise=2*sqrt(2)*k/(n*(mu/sqrt(maxiter+2))) #when scale is known, global sensitivity is 2*sqrt(2)*k/n
+      #noise=2*sqrt(2)*k/(n*(mu/sqrt(maxiter+2))) #when scale is known, global sensitivity is 2*sqrt(2)*k/n
+      noise=2*mnorm*k/(n*(mu/sqrt(maxiter+2)))
       eps=max(eps,noise)
     }
     
@@ -118,7 +119,9 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     outer_term<-outer_term/n #outer term as a matrix, we want the average
   
 
-    if(private==T) {outer_noise<-2/(n*(mu/sqrt(maxiter+2)))}
+    #if(private==T) {outer_noise<-2/(n*(mu/sqrt(maxiter+2)))}
+    if(private==T) {outer_noise<-(mnorm^2)/(n*(mu/sqrt(maxiter+2)))}
+    
     outer_noisevec<-outer_noise*rnorm(p*(p-1)/2)
     
     outer_noisematrix<-matrix(0,nrow=p,ncol=p)
@@ -137,7 +140,8 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     
     
     #draw a vector of (appropriately scaled) random normal variables
-    if(private==T) {middle_noise<-2*(k^2)/(n*(mu/sqrt(maxiter+2)))}
+    #if(private==T) {middle_noise<-2*(k^2)/(n*(mu/sqrt(maxiter+2)))}
+    if(private==T) {middle_noise<-(mnorm^2)*(k^2)/(n*(mu/sqrt(maxiter+2)))}
     
     noisevec<-middle_noise*rnorm(p*(p-1)/2)
     
@@ -185,7 +189,8 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     theta0=c(beta0,s0)
     #if(private==T) commented this out because we use L and eta even for the non-private version
      
-    GS=sqrt(8*k^2+(k^4)/4)  # global sensitivity in L2 norm, because L2 sensitivity of psi is 2sqrt(2)*k and  L2 sensitivity of chi is (k^2)/2
+    #GS=sqrt(8*k^2+(k^4)/4)  # global sensitivity in L2 norm, because L2 sensitivity of psi is 2sqrt(2)*k and  L2 sensitivity of chi is (k^2)/2
+    GS=sqrt(4*(mnorm^2)*k^2+(k^4)/4)
     L=sqrt(1+k^2)           # Lipschitz constant
     eta=1/L-0.001             # step size 
 
@@ -244,9 +249,10 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     outer_term<-outer_term/n #outer term as a matrix, we want the average
     
     
-    if(private==T) {outer_noise<-2/(n*(mu/sqrt(maxiter+2)))}
-    outer_noisevec<-outer_noise*rnorm(p*(p-1)/2)
+    #if(private==T) {outer_noise<-2/(n*(mu/sqrt(maxiter+2)))}
+    if(private==T) {outer_noise<-(mnorm^2)/(n*(mu/sqrt(maxiter+2)))}
     
+    outer_noisevec<-outer_noise*rnorm(p*(p-1)/2)
     
     outer_noisematrix<-matrix(0,nrow=p,ncol=p)
     outer_noisematrix[upper.tri(outer_noisematrix,diag=FALSE)]<-outer_noisevec
@@ -266,7 +272,8 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     
     
     #draw a vector of (appropriately scaled) random normals
-    if(private==T) {middle_noise<-2*(k^2)/(n*(mu/sqrt(maxiter+2)))}
+    #if(private==T) {middle_noise<-2*(k^2)/(n*(mu/sqrt(maxiter+2)))}
+    if(private==T) {middle_noise<-(mnorm^2)*(k^2)/(n*(mu/sqrt(maxiter+2)))}
     
     noisevec<-middle_noise*rnorm(p*(p-1)/2)
     
