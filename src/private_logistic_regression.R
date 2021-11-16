@@ -19,15 +19,15 @@ hess<-function(v,xmat){
   return(u/((1+u)^2))
 }
 
-weightfn<-function(x){
-  return(min(1,2/(norm(x,type="2")^2)))
+weightfn<-function(x,max.norm=sqrt(2)){
+  return(min(1,(max.norm/norm(x,type="2"))^2))
 }
 
 #############################################
 ####### gradient descent function ###########
 #############################################
 
-NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]),stopping=0){
+NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]),stopping=0,mnorm=sqrt(2)){
   n=length(x[,1])
   p=length(x[1,])
   grad<-1
@@ -37,9 +37,9 @@ NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]
   
   yhat<-invlogit(as.vector(x%*%beta0))
   diffs<-y-yhat
-  weightvec<-apply(x,1,weightfn)
+  weightvec<-apply(x,1,weightfn,max.norm=mnorm)
   
-  GS<-sqrt(2)
+  GS<-mnorm
   eta<-1 ### PLACEHOLDER-- think about what step size is appropriate
   if(private==T){noise<-GS/(n*(mu/sqrt(maxiter+2)))} #the +2 is needed to get inference (M and Q) within the total mu privacy budget
   eps=max(eps,noise/2)
