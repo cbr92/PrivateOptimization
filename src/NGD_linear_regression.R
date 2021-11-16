@@ -34,7 +34,7 @@ Fisher.constant <- function(k){ # computes Fisher consistency constant for Huber
 
 
 weightfn<-function(x,max.norm=sqrt(2)){
-  return(min(1,(max.norm/norm(x,type="2")^2)))
+  return(min(1,(max.norm/norm(x,type="2"))^2))
 }
 
 
