@@ -76,7 +76,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
 # Location estimation with known scale
   if(scale==F)
     {
-    eta=(1/(mnorm*k))-0.001 # 1/L where L is the lipschitz constant
+    eta=(1/(2*k))-0.001 # step size
     if(private==T) {
       #noise=2*sqrt(2)*k/(n*(mu/sqrt(maxiter+2))) #when scale is known, global sensitivity is 2*sqrt(2)*k/n
       noise=2*mnorm*k/(n*(mu/sqrt(maxiter+2)))
