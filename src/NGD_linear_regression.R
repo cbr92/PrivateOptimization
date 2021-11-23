@@ -76,7 +76,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
 # Location estimation with known scale
   if(scale==F)
     {
-    eta<-ifelse(is.null(stepsize),(1/(2*k))-0.001,stepsize) # step size
+    eta<-ifelse(is.null(stepsize),(1/2)-0.001,stepsize) # step size
     if(private==T) {
       noise=2*mnorm*k/(n*(mu/sqrt(maxiter+2)))
       eps=max(eps,noise)
