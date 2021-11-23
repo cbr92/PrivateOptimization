@@ -42,7 +42,7 @@ weightfn<-function(x,max.norm=sqrt(2)){
 #################
 # Main function
 
-NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,maxiter=100,eps=1e-5,beta0=rep(0,dim(x)[2]),s0=1,s.min=0.01,stopping=0,mnorm=sqrt(2))
+NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,maxiter=100,eps=1e-5,beta0=rep(0,dim(x)[2]),s0=1,stepsize=NULL,s.min=0.01,stopping=0,mnorm=sqrt(2))
 {
     #y is a vector of length n
     #x is now an n by p matrix
@@ -76,9 +76,8 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
 # Location estimation with known scale
   if(scale==F)
     {
-    eta=(1/(2*k))-0.001 # step size
+    eta<-ifelse(is.null(stepsize),(1/(2*k))-0.001,stepsize) # step size
     if(private==T) {
-      #noise=2*sqrt(2)*k/(n*(mu/sqrt(maxiter+2))) #when scale is known, global sensitivity is 2*sqrt(2)*k/n
       noise=2*mnorm*k/(n*(mu/sqrt(maxiter+2)))
       eps=max(eps,noise)
     }
@@ -119,7 +118,6 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     outer_term<-outer_term/n #outer term as a matrix, we want the average
   
 
-    #if(private==T) {outer_noise<-2/(n*(mu/sqrt(maxiter+2)))}
     if(private==T) {outer_noise<-(mnorm^2)/(n*(mu/sqrt(maxiter+2)))}
     
     outer_noisevec<-outer_noise*rnorm(p*(p-1)/2)
@@ -140,7 +138,6 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     
     
     #draw a vector of (appropriately scaled) random normal variables
-    #if(private==T) {middle_noise<-2*(k^2)/(n*(mu/sqrt(maxiter+2)))}
     if(private==T) {middle_noise<-(mnorm^2)*(k^2)/(n*(mu/sqrt(maxiter+2)))}
     
     noisevec<-middle_noise*rnorm(p*(p-1)/2)
@@ -187,12 +184,9 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
   if(scale==T)
     {
     theta0=c(beta0,s0)
-    #if(private==T) commented this out because we use L and eta even for the non-private version
      
-    #GS=sqrt(8*k^2+(k^4)/4)  # global sensitivity in L2 norm, because L2 sensitivity of psi is 2sqrt(2)*k and  L2 sensitivity of chi is (k^2)/2
     GS=sqrt(4*(mnorm^2)*k^2+(k^4)/4)
-    L=sqrt(1+k^2)           # Lipschitz constant
-    eta=1/L-0.001             # step size 
+    eta<-ifelse(is.null(stepsize),(1/sqrt(1+k^2))-0.001,stepsize)             # step size 
 
     
     if(private==T)
@@ -249,7 +243,6 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     outer_term<-outer_term/n #outer term as a matrix, we want the average
     
     
-    #if(private==T) {outer_noise<-2/(n*(mu/sqrt(maxiter+2)))}
     if(private==T) {outer_noise<-(mnorm^2)/(n*(mu/sqrt(maxiter+2)))}
     
     outer_noisevec<-outer_noise*rnorm(p*(p-1)/2)
@@ -272,7 +265,6 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     
     
     #draw a vector of (appropriately scaled) random normals
-    #if(private==T) {middle_noise<-2*(k^2)/(n*(mu/sqrt(maxiter+2)))}
     if(private==T) {middle_noise<-(mnorm^2)*(k^2)/(n*(mu/sqrt(maxiter+2)))}
     
     noisevec<-middle_noise*rnorm(p*(p-1)/2)
