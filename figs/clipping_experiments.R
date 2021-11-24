@@ -1,8 +1,16 @@
+#############################################
+########## CONTENTS #########################
+#############################################
+## 1. generate figure [2]
+## 2. generate figure [3]
+#############################################
+#############################################
+
 source("/Users/caseybradshaw/Documents/privacy/clipped_gradient_descent.R")
 
 
 #############################################
-###########  linear regression  #############
+#########  1 (linear regression)  ###########
 #############################################
 
 
@@ -38,8 +46,9 @@ for(j in 1:5)
   }
 }
 
-
-
+#############################################
+# to generate Figure [2]
+#############################################
 par(mfrow=c(1,2))
 boxplot(betas_ngd[[1]][,2],betas_ngd[[2]][,2],betas_ngd[[3]][,2],betas_ngd[[4]][,2],betas_ngd[[5]][,2],
         names=N, xlab="sample size",ylab=expression(paste("Estimate of ", beta[2]," parameter")), 
@@ -53,7 +62,7 @@ abline(h=beta_gen[2],col=2)
 
 
 #############################################
-########### logistic regression #############
+######### 2 (logistic regression) ###########
 #############################################
 
 
@@ -90,6 +99,10 @@ for(j in 1:5)
     betas_ngd[[j]][i,]<-out_ngd$beta
   }
 }
+
+#############################################
+# to generate Figure [3]
+#############################################
 
 par(mfrow=c(1,2))
 boxplot(betas_ngd[[1]][,4],betas_ngd[[2]][,4],betas_ngd[[3]][,4],betas_ngd[[4]][,4],betas_ngd[[5]][,4],
