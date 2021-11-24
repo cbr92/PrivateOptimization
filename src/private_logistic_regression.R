@@ -24,7 +24,7 @@ weightfn<-function(x,max.norm=sqrt(2)){
 ####### gradient descent function ###########
 #############################################
 
-NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]),stopping=0,stepsize=NULL,mnorm=sqrt(2)){
+NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]),stopping=0,stepsize=NULL,mnorm=sqrt(2),suppress.inference=FALSE){
   n=length(x[,1])
   p=length(x[1,])
   grad<-1
@@ -36,14 +36,13 @@ NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]
   diffs<-y-yhat
   weightvec<-apply(x,1,weightfn,max.norm=mnorm)
   
-  GS<-mnorm
+  GS<-2*mnorm
   eta<-ifelse(is.null(stepsize),(4/(mnorm^2))-0.001,stepsize) #step size
   if(private==T){noise<-GS/(n*(mu/sqrt(maxiter+2)))} #the +2 is needed to get inference (M and Q) within the total mu privacy budget
   eps=max(eps,noise)
   
   while(grad>stopping*eps & iter<maxiter){
     iter<-iter+1
-    
     
     beta<-beta0+eta*(colMeans(diffs*weightvec*x)+noise*rnorm(p))
     beta0<-beta
@@ -171,8 +170,8 @@ Newton_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)
   eta<-ifelse(is.null(stepsize),1,stepsize) #perform pure newton unless otherwise specified
  
   if(private==T){
-    noise<-sqrt(2)/(n*(mu/sqrt(2*maxiter)))
-    hessian_noise<-(1/2)/(n*(mu/sqrt(2*maxiter)))
+    noise<-2*sqrt(2)/(n*(mu/sqrt(2*maxiter))) #noise for the gradient
+    hessian_noise<-((mnorm^2)/4)/(n*(mu/sqrt(2*maxiter)))
     }
   eps=max(eps,noise)
   
