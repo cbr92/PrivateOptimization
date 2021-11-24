@@ -192,7 +192,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     if(private==T)
       {
         noise=GS/(n*(mu/sqrt(maxiter+2))) 
-        eps=max(eps,noise/2)
+        eps=max(eps,noise)
       }
     
     grad_traj[1]<-sqrt(sum((colMeans(psi.vec*weightvec*x)^2))+(sum.chi^2))
