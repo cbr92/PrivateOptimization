@@ -53,7 +53,7 @@ source("/Users/caseybradshaw/Documents/privacy/private_logistic_regression.R")
 n<-dim(xmat)[1]
 p<-dim(xmat)[2]
 
-BETA<-NGD_logistic(x=xmat,y=yvec,private=F,maxiter=500,beta0=rep(0,p),mnorm=5)
+BETA<-NGD_logistic(x=xmat,y=yvec,private=F,maxiter=500,beta0=rep(0,p),mnorm=5,stepsize=1)
 BETA<-BETA$beta
 
 
@@ -70,8 +70,8 @@ for(j in 1:length(N)){
     x<-xmat[idx,]
     y<-yvec[idx]
     
-    out<-NGD_logistic(x=x,y=y,private=T,mu=0.25,maxiter=(50+25*(N[j]>500)+25*(N[j]>2000)),beta0=rep(0,p),mnorm=5)
-    out.np<-NGD_logistic(x=x,y=y,private=F,maxiter=500,beta0=rep(0,p),mnorm=5)
+    out<-NGD_logistic(x=x,y=y,private=T,mu=0.25,maxiter=(50+25*(N[j]>500)+25*(N[j]>2000)),beta0=rep(0,p),mnorm=5,stepsize=1,suppress.inference=TRUE)
+    out.np<-NGD_logistic(x=x,y=y,private=F,maxiter=500,beta0=rep(0,p),mnorm=5,stepsize=1,suppress.inference=TRUE)
     
     betas_private[i,j]<-sqrt(sum((out$beta-BETA)^2))
     betas_np[i,j]<-sqrt(sum((out.np$beta-BETA)^2))
