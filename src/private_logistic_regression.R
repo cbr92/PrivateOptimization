@@ -38,9 +38,8 @@ NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]
   
   GS<-mnorm
   eta<-ifelse(is.null(stepsize),(4/(mnorm^2))-0.001,stepsize) #step size
-  #eta<-1 ### PLACEHOLDER-- think about what step size is appropriate
   if(private==T){noise<-GS/(n*(mu/sqrt(maxiter+2)))} #the +2 is needed to get inference (M and Q) within the total mu privacy budget
-  eps=max(eps,noise/2)
+  eps=max(eps,noise)
   
   while(grad>stopping*eps & iter<maxiter){
     iter<-iter+1
@@ -166,7 +165,7 @@ Newton_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)
   
   yhat<-invlogit(as.vector(x%*%beta0))
   diffs<-y-yhat
-  hessian_coefs<-hess(beta0,x)
+  hessian_coefs<-yhat*(1-yhat)
   weightvec<-apply(x,1,weightfn)
   
   eta<-ifelse(is.null(stepsize),1,stepsize) #perform pure newton unless otherwise specified
@@ -175,7 +174,7 @@ Newton_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)
     noise<-sqrt(2)/(n*(mu/sqrt(2*maxiter)))
     hessian_noise<-(1/2)/(n*(mu/sqrt(2*maxiter)))
     }
-  eps=max(eps,noise/2)
+  eps=max(eps,noise)
   
   beta_hessian<-matrix(0,nrow=p,ncol=p)
   for(i in 1:n){beta_hessian<-beta_hessian+weightvec[i]*hessian_coefs[i]*(x[i,]%o%x[i,])}
@@ -208,7 +207,7 @@ Newton_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)
     beta0<-beta
     yhat<-invlogit(as.vector(x%*%beta0))
     diffs<-y-yhat
-    hessian_coefs<-hess(beta0,x)
+    hessian_coefs<-yhat*(1-yhat)
     
     
     #reset the hessian
@@ -227,7 +226,7 @@ Newton_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)
     ## compute estimate of "M" matrix and add noise to make private
     ## using analyze gauss (gaussian wigner matrix) mechanism for M privacy
     
-    if(private==T) {outer_noise<-((mnorm^2)/4)/(n*(mu/sqrt(maxiter+2)))} ###CHANGE THIS
+    if(private==T) {outer_noise<-((mnorm^2)/4)/(n*(mu/sqrt(maxiter+2)))}
     
     outer_noisevec<-outer_noise*rnorm(p*(p-1)/2)
     
