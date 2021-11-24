@@ -6,9 +6,9 @@
 ## 2. using NGD to fit linear regression model to full data set
 ##    and generate Table 1
 ## 3. calculating average p values across repeated subsamples
-##    and generage Figure [##]
+##    and generage Figure [12]
 ## 4. calculate parameter error across repeated subsamples
-##    and generate Figure [##]
+##    and generate Figure [13]
 
 
 #############################################
@@ -204,7 +204,7 @@ for(j in 1:length(N)){
   }
 }
 
-### this is the plot for the paper
+### this is the plot for figure [13] the paper
 par(mfrow=c(1,1))
 plot(1:length(N),colMeans(betas_private),xlab="sample size",ylab="Error",xaxt='n',
      ylim=c(0,1),pch=16,col="cornflowerblue")
@@ -218,7 +218,7 @@ legend("topright",bty='n',legend=c(expression(paste("private, ", mu,"=0.25")),"n
 #save(N,ns,BETA,betas_private,betas_np,file="param_error_new.Rdata")
 
 
-### same plot but log scale on y axis
+### same plot but log scale on y axis (this is not in the paper)
 plot(1:length(N),log(colMeans(betas_private)),xlab="sample size",ylab="Error",xaxt='n',
      ylim=c(-4,0),pch=16,col="cornflowerblue")
 axis(1,at=1:length(N),labels=N)
