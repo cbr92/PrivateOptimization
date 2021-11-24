@@ -4,7 +4,7 @@
 
 ## 1. preprocessing of bank data set
 ## 2. calculate parameter error across repeated subsamples
-##    and generate Figure [##]
+##    and generate Figure [14]
 
 
 #############################################
