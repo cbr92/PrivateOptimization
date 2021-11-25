@@ -64,10 +64,9 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
   
   
 # Location estimation with known scale
-  if(scale==F)
-    {
+  if(scale==F){
     eta<-ifelse(is.null(stepsize),(1/2)-0.001,stepsize) # step size
-    if(private==T) {
+    if(private==T){
       noise=2*mnorm*k/(n*(mu/sqrt(maxiter+2)))
       eps=max(eps,noise)
     }
@@ -86,8 +85,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     }
     
     # this performs gradient descent to estimate beta (if private=T, the gradient descent is noisy)
-  while(iter<maxiter & stop_flag < 1)
-    {
+  while(iter<maxiter & stop_flag < 1){
     iter=iter+1 
     
     beta=beta0+eta*noisy_grad
@@ -188,16 +186,14 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
   
   
   # Joint location and scale estimation
-  if(scale==T)
-    {
+  if(scale==T){
     theta0=c(beta0,s0)
      
     GS=sqrt(4*(mnorm^2)*k^2+(k^4)/4)
     eta<-ifelse(is.null(stepsize),(1/sqrt(1+k^2))-0.001,stepsize)             # step size 
 
     
-    if(private==T)
-      {
+    if(private==T){
         noise=GS/(n*(mu/sqrt(maxiter+2))) 
         eps=max(eps,noise)
       }
@@ -213,8 +209,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
       stop_flag<-1*s0
       }
       
-    while(iter < maxiter & stop_flag < 1 ) 
-    {
+    while(iter < maxiter & stop_flag < 1 ){
       iter=iter+1 
       
       theta0=theta0+s0*eta*noisy_grad #this is with eta*noise
@@ -244,8 +239,6 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
       stop_flag<-1*s0
       }
     
-      
-
     }
     
     
@@ -325,8 +318,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     sandwich<-solve(outer_term)%*%middle_term%*%t(solve(outer_term))
   
     corrected_variances<-(sandwich/n)+(noise^2)*diag(p)*(eta^2)
-    
-    
+       
   }
   
   if(grad < eps) conv_np=T 
