@@ -1,17 +1,6 @@
-###############
-#version notes
-#
-# starts from v6
-# which adds correction factor to sandwich variance, and uses 
-# gaussian wigner matrix method ("analyze gauss") for BOTH M and Q
-# 
-# this one truncates the eigenvalues of Q if our noisy Q is not positive definite
-# (post-processing, does not impact the privacy guarantee)
-
-
 ################################################
-# Noisy gradient descent for linear regression with Huber-style loss function
-# 
+# Noisy gradient descent for linear regression with Huber-style loss function with Mallows weights
+################################################
 
 
 ####
