@@ -49,18 +49,19 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     n=length(x[,1])
     p=length(x[1,])
    
+  #stopping=="private" allows algorithm to terminate early if the noisy gradient at the current parameter estimate is sufficiently small
+  #stopping=="non-private" allows the algoritm to terminate early if the true gradient is sufficiently small
+  
   if(k!=1.345)            fisher_beta = Fisher.constant(k)
     
-  noise=0
-  middle_noise=0 #gets updated further down if private=T
-  outer_noise=0
-  conv=F
+  noise=middle_noise=outer_noise=0 #gets updated further down if private=T
+  conv_np=conv_priv=F
   iter=0
   grad=1
   truncation<-0
-  
+  stop_flag<-0
 
-  grad_traj<-rep(NA,maxiter+1)
+  np_grad_traj=priv_grad_traj=rep(NA,maxiter+1)
   sigma_vec<-s0
 
   r=(y-as.vector(x%*%beta0))/s0
@@ -84,22 +85,39 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     
     s=s0
     
-    grad_traj[1]<-sqrt(sum((colMeans(psi.vec*weightvec*x)^2))) #tracks the evolution of non-noisy gradient (in L2 norm)
+    np_grad_traj[1]<-sqrt(sum((colMeans(psi.vec*weightvec*x)^2))) #tracks the evolution of non-noisy gradient (in L2 norm)
+    
+    noisy_grad<-colMeans(psi.vec*weightvec*x)+noise*rnorm(p)
+    priv_grad_traj[1]<-sqrt(sum(noisy_grad^2))
+    
+    if(stopping=="private" & priv_grad_traj[1]<=eps){
+      stop_flag<-1
+    }else if(stopping=="non-private" & np_grad_traj[1]<=eps){
+      stop_flag<-1
+    }
     
     # this performs gradient descent to estimate beta (if private=T, the gradient descent is noisy)
-  while(iter<maxiter & grad > stopping*eps)
+  while(iter<maxiter & stop_flag < 1)
     {
     iter=iter+1 
     
-    beta=beta0+eta*(colMeans(psi.vec*weightvec*x)+noise*rnorm(p))
+    beta=beta0+eta*noisy_grad
     beta0=beta
 
     r=(y-as.vector(x%*%beta0))/s0
     psi.vec<-psiHuber(r,k)
     
     
-    grad=sqrt(sum((colMeans(psi.vec*weightvec*x)^2))) #this is the actual gradient evaluated at current value of beta0, NOT a noisy copy
-    grad_traj[iter+1]<-grad
+    grad=sqrt(sum((colMeans(psi.vec*weightvec*x)^2))) #this is the actual (norm of the) gradient evaluated at current value of beta0, NOT a noisy copy
+    np_grad_traj[iter+1]<-grad
+    noisy_grad<-colMeans(psi.vec*weightvec*x)+noise*rnorm(p)
+    priv_grad_traj[iter+1]<-sqrt(sum(noisy_grad^2))
+    
+    if(stopping=="private" & priv_grad_traj[iter+1]<=eps){
+      stop_flag<-1
+    }else if(stopping=="non-private" & np_grad_traj[iter+1]<=eps){
+      stop_flag<-1
+    }
     
   }
   
@@ -195,13 +213,22 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
         eps=max(eps,noise)
       }
     
-    grad_traj[1]<-sqrt(sum((colMeans(psi.vec*weightvec*x)^2))+(sum.chi^2))
+    np_grad_traj[1]<-sqrt(sum((colMeans(psi.vec*weightvec*x)^2))+(sum.chi^2))
     
-    while(iter<maxiter & grad > stopping*eps ) 
+    noisy_grad<-c(colMeans(psi.vec*weightvec*x),sum.chi)+noise*rnorm(p+1)
+    priv_grad_traj[1]<-sqrt(sum(noisy_grad^2))
+    
+    if(stopping=="private" & priv_grad_traj[iter+1]<=eps){
+      stop_flag<-1*s0 # multiplying stop_flag by s0 forces algorithm to continue if current estimate of s0 is negative
+      }else if(stopping=="non-private" & np_grad_traj[iter+1]<=eps){
+      stop_flag<-1*s0
+      }
+      
+    while(iter < maxiter & stop_flag < 1 ) 
     {
       iter=iter+1 
       
-      theta0=theta0+s0*eta*(c(colMeans(psi.vec*weightvec*x),sum.chi)+noise*rnorm(p+1)) #this is with eta*noise
+      theta0=theta0+s0*eta*noisy_grad #this is with eta*noise
       
       beta0=theta0[1:p]
       
@@ -217,10 +244,17 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
       sum.chi=mean(((psiHuber(r,k)^2)-fisher_beta)*weightvec)/2
       
       grad=sqrt(sum((colMeans(psi.vec*weightvec*x)^2))+(sum.chi^2)) #non-noisy gradient evaluated at (beta0,sigma0)
-
-      grad_traj[iter+1]<-grad #tracks the evolution of non-noisy gradient (in L2 norm)
+      np_grad_traj[iter+1]<-grad #tracks the evolution of non-noisy gradient (in L2 norm)
       
-      if(s0 < 0) grad=eps+1    # force the algorithm to continue if the current scale estimate is negative
+      noisy_grad<-c(colMeans(psi.vec*weightvec*x),sum.chi)+noise*rnorm(p+1)
+      priv_grad_traj[iter+1]<-sqrt(sum(noisy_grad^2))
+      
+      if(stopping=="private" & priv_grad_traj[iter+1]<=eps){
+      stop_flag<-1*s0 # multiplying stop_flag by s0 forces algorithm to continue if current estimate of s0 is negative
+      }else if(stopping=="non-private" & np_grad_traj[iter+1]<=eps){
+      stop_flag<-1*s0
+      }
+    
       
 
     }
@@ -306,8 +340,8 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     
   }
   
-  if( grad < eps) conv=T #keep in mind that this is the non-noisy gradient, so can use this to assess performance in
-                          #simulations, but NOT in real implementations (would violate privacy guarantee)
+  if(grad < eps) conv_np=T 
+  if(sqrt(sum(noisy_grad^2)) < eps) conv_priv=T      
     
   out=NULL
   out$beta=beta
@@ -315,16 +349,20 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
   out$r=r
   out$sigma_vec=sigma_vec
   out$iter=iter
-  out$grad=grad #for implementation, need to change this to be the private version of gradient
-  out$converge=1*conv #for implementation, need to change this to be based on the private version of gradient
+  out$nonpriv_grad=grad #this is the L2 norm of the non-private gradient
+  out$priv_grad=sqrt(sum(noisy_grad^2)) #L2 norm of the private gradient
+  out$priv_gradtraj=priv_grad_traj
+  out$nonpriv_gradtraj=np_grad_traj
+  out$nonpriv_converge=1*conv_np #for implementation, need to change this to be based on the private version of gradient
+  out$priv_converge=1*conv_priv
   out$private=private
   out$noise=noise
+  if(suppress.inference==FALSE){
   out$middle=middle_term
   out$outer=outer_term
   out$sandwich=sandwich
   out$variances=corrected_variances
-  out$truncation=truncation
-  out$gradtraj=grad_traj
+  out$truncation=truncation}
   
 
   return(out)
