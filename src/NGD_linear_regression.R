@@ -1,14 +1,3 @@
-###############
-#version notes
-#
-# starts from v6
-# which adds correction factor to sandwich variance, and uses 
-# gaussian wigner matrix method ("analyze gauss") for BOTH M and Q
-# 
-# this one truncates the eigenvalues of Q if our noisy Q is not positive definite
-# (post-processing, does not impact the privacy guarantee)
-
-
 ################################################
 # Noisy gradient descent for linear regression with Huber-style loss function
 # 
@@ -74,10 +63,10 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
   
   
 # Location estimation with known scale
-  if(scale==F)
-    {
+  if(scale==F){
+    
     eta<-ifelse(is.null(stepsize),(1/2)-0.001,stepsize) # step size
-    if(private==T) {
+    if(private==T){
       noise=2*mnorm*k/(n*(mu/sqrt(maxiter+2)))
       eps=max(eps,noise)
     }
@@ -184,8 +173,10 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
   if(scale==T)
     {
     theta0=c(beta0,s0)
-     
-    GS=sqrt(4*(mnorm^2)*k^2+(k^4)/4)
+    
+    GS_sigma<-min((k^2)/2,(k^2-fisher_beta))
+    #GS=sqrt(4*(mnorm^2)*k^2+(k^4)/4)
+    GS<-sqrt(4*(mnorm^2)*k^2+GS_sigma^2)
     eta<-ifelse(is.null(stepsize),(1/sqrt(1+k^2))-0.001,stepsize)             # step size 
 
     
