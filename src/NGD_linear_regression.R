@@ -31,7 +31,7 @@ weightfn<-function(x,max.norm=sqrt(2)){
 #################
 # Main function
 
-NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,maxiter=100,eps=1e-5,beta0=rep(0,dim(x)[2]),s0=1,stepsize=NULL,s.min=0.01,stopping=0,mnorm=sqrt(2))
+NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,maxiter=100,eps=1e-5,beta0=rep(0,dim(x)[2]),s0=1,stepsize=NULL,s.min=0.01,stopping=0,mnorm=sqrt(2),suppress.inference=FALSE)
 {
     #y is a vector of length n
     #x is now an n by p matrix
@@ -39,7 +39,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     p=length(x[1,])
    
   #stopping=="private" allows algorithm to terminate early if the noisy gradient at the current parameter estimate is sufficiently small
-  #stopping=="non-private" allows the algoritm to terminate early if the true gradient is sufficiently small
+  #stopping=="non-private" allows the algorithm to terminate early if the true gradient is sufficiently small
   
   if(k!=1.345)            fisher_beta = Fisher.constant(k)
     
@@ -110,7 +110,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
   }
   
 
-  
+  if(suppress.inference==FALSE){
     ## perform inference based on sandwich estimator
     
     ## compute estimate of "M" matrix and add noise to make private
@@ -182,7 +182,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     sandwich<-solve(outer_term)%*%middle_term%*%t(solve(outer_term))
     
     corrected_variances<-(sandwich/n)+(noise^2)*diag(p)*(eta^2) #values on the diagonal of this matrix are corrected variances for the components of the beta vector
-  
+  }
   }
   
   
@@ -248,7 +248,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     beta=beta0
     s=s0
     
-    
+    if(suppress.inference==FALSE){
     ## perform inference based on sandwich estimator
     
     ## compute estimate of "M" matrix and add noise to make private
@@ -321,7 +321,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     sandwich<-solve(outer_term)%*%middle_term%*%t(solve(outer_term))
   
     corrected_variances<-(sandwich/n)+(noise^2)*diag(p)*(eta^2)
-       
+  }     
   }
   
   if(grad < eps) conv_np=T 
@@ -337,8 +337,8 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
   out$priv_grad=sqrt(sum(noisy_grad^2)) #L2 norm of the private gradient
   out$priv_gradtraj=priv_grad_traj
   out$nonpriv_gradtraj=np_grad_traj
-  out$nonpriv_converge=1*conv_np #for implementation, need to change this to be based on the private version of gradient
-  out$priv_converge=1*conv_priv
+  out$nonpriv_converge=1*conv_np #convergence assessment based on non-private version of gradient
+  out$priv_converge=1*conv_priv #convergence assessment based on private version of gradient
   out$private=private
   out$noise=noise
   if(suppress.inference==FALSE){
