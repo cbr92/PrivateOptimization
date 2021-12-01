@@ -207,9 +207,9 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     priv_grad_traj[1]<-sqrt(sum(noisy_grad^2))
     
     if(stopping=="private" & priv_grad_traj[iter+1]<=eps){
-      stop_flag<-1*s0 # multiplying stop_flag by s0 forces algorithm to continue if current estimate of s0 is negative
+      stop_flag<-sign(s0) # forces algorithm to continue if current estimate of s0 is negative or zero
       }else if(stopping=="non-private" & np_grad_traj[iter+1]<=eps){
-      stop_flag<-1*s0
+      stop_flag<-sign(s0)
       }
       
     while(iter < maxiter & stop_flag < 1 ){
@@ -237,9 +237,9 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
       priv_grad_traj[iter+1]<-sqrt(sum(noisy_grad^2))
       
       if(stopping=="private" & priv_grad_traj[iter+1]<=eps){
-      stop_flag<-1*s0 # multiplying stop_flag by s0 forces algorithm to continue if current estimate of s0 is negative
+      stop_flag<-sign(s0) # forces algorithm to continue if current estimate of s0 is negative or zero
       }else if(stopping=="non-private" & np_grad_traj[iter+1]<=eps){
-      stop_flag<-1*s0
+      stop_flag<-sign(s0)
       }
     
     }
