@@ -188,7 +188,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     
     sandwich<-solve(outer_term)%*%middle_term%*%t(solve(outer_term))
     
-    corrected_variances<-(sandwich/n)+(noise^2)*diag(p)*(eta^2) #values on the diagonal of this matrix are corrected variances for the components of the beta vector
+    corrected_variances<-(sandwich/n)+2*(noise^2)*diag(p)*(eta^2) #values on the diagonal of this matrix are corrected variances for the components of the beta vector
   }
   }
   
@@ -205,7 +205,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     
     if(private==T){
         noise=GS/(n*(mu/sqrt(maxiter+2))) 
-        eps=max(eps,noise)
+        eps=max(eps,noise/2)
       }
     
     np_grad_traj[1]<-sqrt(sum((colMeans(psi.vec*weightvec*x)^2))+(sum.chi^2))
@@ -328,7 +328,7 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     
     sandwich<-solve(outer_term)%*%middle_term%*%t(solve(outer_term))
   
-    corrected_variances<-(sandwich/n)+(noise^2)*diag(p)*(eta^2)
+    corrected_variances<-(sandwich/n)+2*(noise^2)*diag(p)*(eta^2)
   }     
   }
   
