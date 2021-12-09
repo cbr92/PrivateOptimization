@@ -13,7 +13,7 @@ x=matrix(rnorm(n*4,mean=0,sd=2),nrow=n)
 x[,1]<-rep(1,n)
 y=as.vector(x%*%beta_gen+rnorm(n,mean=0,sd=s0))
 
-out<-NoisyNewton(x=x,y=y,private=T,mu=2*sqrt(121/9),scale=F,s0=2,maxiter=120,stopping=0,suppress.inference=TRUE) ## should denom be 9 or 6?
+out<-NoisyNewton(x=x,y=y,private=T,mu=2*sqrt(121/9),scale=F,s0=2,maxiter=120,stopping=0,suppress.inference=TRUE)
 outNP<-NoisyNewton(x=x,y=y,private=F,scale=F,s0=2,maxiter=120,stopping=0,suppress.inference=TRUE)
 
 gd<-NGD.Huber(x=x,y=y,private=T,mu=2*sqrt(121/81),scale=F,s0=2,maxiter=120,stopping=0,suppress.inference=TRUE)
