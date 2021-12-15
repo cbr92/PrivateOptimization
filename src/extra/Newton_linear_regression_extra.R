@@ -29,7 +29,7 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
   
   if(k!=1.345)            fisher_beta = Fisher.constant(k)
   
-  noise=middle_noise=outer_noise=hessian_noise=0 #gets updated further down if private=T
+  noise=grad_noise=other_noise=middle_noise=outer_noise=hessian_noise=0 #gets updated further down if private=T
   conv_np=conv_priv=F
   iter=0
   grad=1
@@ -102,11 +102,11 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
     
     #check whether stopping conditions are met
     if(stopping=="private"){
-      if(priv_grad_traj[1]<=eps/2 | min(eigen(noisy_hessian)$values)<1e-15){
+      if(priv_grad_traj[1]<=eps | min(eigen(noisy_hessian)$values)<1e-15){
       stop_flag<-1
       }
-    }else if(stopping=="non-private" & np_grad_traj[1]<=eps/2){
-      if(np_grad_traj[1]<=eps/2 | min(eigen(beta_hessian)$values)<1e-15){
+    }else if(stopping=="non-private"){
+      if(np_grad_traj[1]<=eps | min(eigen(beta_hessian)$values)<1e-15 | min(eigen(noisy_hessian)$values)<1e-15){
       stop_flag<-1
       }
     }
@@ -146,11 +146,11 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
       
       #check whether stopping conditions are met
       if(stopping=="private"){
-        if(priv_grad_traj[iter+1]<=eps/2 | min(eigen(noisy_hessian)$values)<1e-15){
+        if(priv_grad_traj[iter+1]<=eps | min(eigen(noisy_hessian)$values)<1e-15){
           stop_flag<-1
         }
-      }else if(stopping=="non-private" & np_grad_traj[1]<=eps/2){
-        if(np_grad_traj[iter+1]<=eps/2 | min(eigen(beta_hessian)$values)<1e-15){
+      }else if(stopping=="non-private"){
+        if(np_grad_traj[iter+1]<=eps | min(eigen(beta_hessian)$values)<1e-15 | min(eigen(noisy_hessian)$values)<1e-15){
           stop_flag<-1
         }
       }
@@ -171,9 +171,6 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
     }
     
     outer_term<-outer_term/n #outer term as a matrix, we want the average
-    
-    
-    raw_hessian<-outer_term/s0 ### this is not private- should not use  for anything
     
 
     if(private==T) {outer_noise<-(mnorm^2)/(n*(mu/sqrt(2*maxiter+2)))}
@@ -238,7 +235,7 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
 
     var_correction<-hessian_inverse%*%diag(noise^2,nrow=p)%*%hessian_inverse
 
-    corrected_variances<-(sandwich/n)+(var_correction1)*stepsize^2
+    corrected_variances<-(sandwich/n)+(var_correction)*stepsize^2
       
     zscore_corrected<-(beta0[2]-1)/sqrt(corrected_variances[2,2])
     zscore<-(beta0[2]-1)/sqrt((sandwich[2,2]/n))
@@ -251,7 +248,6 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
   
   # Joint location and scale estimation
   
-  ### NEEDS UPDATING, DO NOT USE FOR NOW
   if(scale==T)
   {
     theta0=c(beta0,s0)
@@ -306,11 +302,11 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
     
     #check whether stopping conditions are met
     if(stopping=="private"){
-      if(priv_grad_traj[1]<=eps/2 | min(eigen(noisy_hessian)$values)<1e-15){
+      if(priv_grad_traj[1]<=eps | min(eigen(noisy_hessian)$values)<1e-15){
         stop_flag<-1
       }
     }else if(stopping=="non-private"){
-      if(np_grad_traj[1]<=eps/2 | min(eigen(true_hessian)$values)<1e-15){
+      if(np_grad_traj[1]<=eps | min(eigen(true_hessian)$values)<1e-15){
         stop_flag<-1
       }
     }
@@ -376,11 +372,11 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
       
       #check whether stopping conditions are met
       if(stopping=="private"){
-        if(priv_grad_traj[iter+1]<=eps/2 | min(eigen(noisy_hessian)$values)<1e-15){
+        if(priv_grad_traj[iter+1]<=eps | min(eigen(noisy_hessian)$values)<1e-15){
           stop_flag<-1
         }
       }else if(stopping=="non-private"){
-        if(np_grad_traj[iter+1]<=eps/2 | min(eigen(true_hessian)$values)<1e-15){
+        if(np_grad_traj[iter+1]<=eps | min(eigen(true_hessian)$values)<1e-15){
           stop_flag<-1
         }
       }
@@ -467,9 +463,9 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
       
       sandwich<-hessian_inverse%*%middle_term%*%t(hessian_inverse)
       
-      var_correction<-hessian_inverse%*%diag(noise^2,nrow=p)%*%hessian_inverse
+      var_correction<-hessian_inverse%*%diag(grad_noise^2,nrow=p)%*%hessian_inverse
       
-      corrected_variances<-(sandwich/n)+(var_correction1)*stepsize^2
+      corrected_variances<-(sandwich/n)+(var_correction)*stepsize^2
       
       zscore_corrected<-(beta0[2]-1)/sqrt(corrected_variances[2,2])
       zscore<-(beta0[2]-1)/sqrt((sandwich[2,2]/n))
@@ -479,7 +475,7 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
   }#end of "joint estimation" section
   
   if(grad < eps) conv_np=T 
-  if(sqrt(sum(noisy_grad^2)) < eps) conv_priv=T 
+  if(sqrt(sum(noisy_grad^2)) < eps ) conv_priv=T 
   
   out=NULL
   out$beta=beta
