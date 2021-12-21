@@ -35,10 +35,10 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
   grad=1
   middle_term<-NA
   outer_term<-NA
-  zscore_alt1=NA
-  alt_sandwich1<-NA
-  var_correction1=NA
+  sandwich<-NA
+  var_correction<-NA
   stop_flag<-0
+  eig_min<-NA
   
   np_grad_traj=priv_grad_traj=rep(NA,maxiter+1)
   
@@ -50,7 +50,7 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
   sum.chi=mean(((psiHuber(r,k)^2)-fisher_beta)*weightvec)/2 ##divide by 2 so psi and chi come from same objective function
   
   
-  sum.chiprime=mean((r^2)*(abs(r)<k)*weightvec) ##### CHECK THIS
+  sum.chiprime=mean((r^2)*(abs(r)<k)*weightvec)
   
   
 
@@ -61,7 +61,7 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
   if(scale==F){
     
     if(private==T){
-      noise=2*mnorm*k/(n*(mu/sqrt(2*maxiter+2))) #global sensitivity is 2*sqrt(2)*k for the gradient, and 
+      noise=2*mnorm*k/(n*(mu/sqrt(2*maxiter+2))) 
       #we need to do maxiter steps for the gradient AND maxiter steps for the Hessian, plus 2 for M and Q matrices
       #so sqrt(2*maxiter+2) in each place we add noise
       eps=max(eps,noise/2)
@@ -84,8 +84,7 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
     beta_hessian<-beta_hessian/n
     
     
-    #update noise for private version, based on Dwork et al gaussian mechanism
-    #if private==F the noise stays at 0
+    #update noise for private version
     if(private==T) {hessian_noise<-(mnorm^2)/(n*(mu/sqrt(2*maxiter+2)))}
     
     ##sample the noise for the hessian (which will just be 0's if private=F)
@@ -101,17 +100,13 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
 
     
     #check whether stopping conditions are met
-    if(stopping=="private"){
-      if(priv_grad_traj[1]<=eps | min(eigen(noisy_hessian)$values)<1e-15){
+    if(stopping=="private" & priv_grad_traj[1]<=eps){
       stop_flag<-1
-      }
-    }else if(stopping=="non-private"){
-      if(np_grad_traj[1]<=eps | min(eigen(beta_hessian)$values)<1e-15 | min(eigen(noisy_hessian)$values)<1e-15){
+    }else if(stopping=="non-private" & np_grad_traj[1]<=eps){
       stop_flag<-1
-      }
     }
-    # this performs newton raphson to estimate beta (if private=T, the newton raphson is noisy)
-    while(iter < maxiter & stop_flag < 1){ ### change the L1 norm to L2 norm for the gradient
+    # this performs newton raphson to estimate beta
+    while(iter < maxiter & stop_flag < 1 & min(abs(eigen(noisy_hessian)$values))>1e-15 ){ #stop if hessian is computationally singular
     
       iter=iter+1
     
@@ -122,19 +117,17 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
       psi.vec<-psiHuber(r,k)
 
       #reset the hessian
-      #REWRITE THIS WITHOUT THE LOOP
+
       beta_hessian<-matrix(0,nrow=p,ncol=p)
       for(i in 1:n){
         beta_hessian<-beta_hessian+(abs(r[i])<k)*weightvec[i]*(x[i,]%o%x[i,])
       }
       beta_hessian<-beta_hessian/n
       
-      ##sample the noise for the hessian (which will just be 0's if private=F)
+      ##sample the noise for the hessian
       hessian_noisevec<-hessian_noise*rnorm(p*(p-1)/2)
       hessian_noisematrix<-matrix(0,nrow=p,ncol=p)
       hessian_noisematrix[upper.tri(hessian_noisematrix,diag=FALSE)]<-hessian_noisevec
-      ##reflect them across the diagonal to get a symmetric matrix,
-      ##and draw p-many more random normals to put on the diagonal itself
       hessian_noisematrix<-hessian_noisematrix+t(hessian_noisematrix)+diag(x=hessian_noise*rnorm(p),nrow=p)
       
       noisy_hessian<-beta_hessian+hessian_noisematrix
@@ -145,14 +138,10 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
       priv_grad_traj[iter+1]<-sqrt(sum(noisy_grad^2))
       
       #check whether stopping conditions are met
-      if(stopping=="private"){
-        if(priv_grad_traj[iter+1]<=eps | min(eigen(noisy_hessian)$values)<1e-15){
+      if(stopping=="private" & priv_grad_traj[iter+1]<=eps){
           stop_flag<-1
-        }
-      }else if(stopping=="non-private"){
-        if(np_grad_traj[iter+1]<=eps | min(eigen(beta_hessian)$values)<1e-15 | min(eigen(noisy_hessian)$values)<1e-15){
+      }else if(stopping=="non-private" & np_grad_traj[iter+1]<=eps){
           stop_flag<-1
-        }
       }
       
     }
@@ -236,9 +225,7 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
     var_correction<-hessian_inverse%*%diag(noise^2,nrow=p)%*%hessian_inverse
 
     corrected_variances<-(sandwich/n)+(var_correction)*stepsize^2
-      
-    zscore_corrected<-(beta0[2]-1)/sqrt(corrected_variances[2,2])
-    zscore<-(beta0[2]-1)/sqrt((sandwich[2,2]/n))
+
     
     }
     
@@ -258,7 +245,7 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
       grad_noise=GS_grad/(n*(mu/sqrt(3*maxiter+2)))
       hessian_noise<-2/(n*(mu/sqrt(3*maxiter+2)))
       other_noise<-sqrt(4*(mnorm^2)*(k^2)+(k^4))/(n*(mu/sqrt(3*maxiter+2)))
-      eps=max(eps,noise/2)
+      eps=max(eps,grad_noise/2)
     }
     
     grad<-sqrt(sum((colMeans(psi.vec*weightvec*x)^2))+(sum.chi^2))
@@ -301,29 +288,27 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
     true_hessian[(p+1),]<-c(mixed_partial,sum.chiprime)
     
     #check whether stopping conditions are met
-    if(stopping=="private"){
-      if(priv_grad_traj[1]<=eps | min(eigen(noisy_hessian)$values)<1e-15){
+    if(stopping=="private" & priv_grad_traj[1]<=eps){
         stop_flag<-1
-      }
-    }else if(stopping=="non-private"){
-      if(np_grad_traj[1]<=eps | min(eigen(true_hessian)$values)<1e-15){
+    }else if(stopping=="non-private" & np_grad_traj[1]<=eps){
         stop_flag<-1
-      }
     }
     
+    eig_min<-min(eigen(true_hessian)$value)
     
-    
-    # this performs newton raphson to estimate beta (if private=T, the newton raphson is noisy)
+    # this performs newton raphson to estimate beta
     while(iter < maxiter & stop_flag < 1){ 
       
       iter=iter+1
+      
+      eig_min<-min(eigen(true_hessian)$value)
       
       theta=theta0+stepsize*solve(noisy_hessian/s0)%*%noisy_grad
       theta0=theta
       
       beta0=theta0[1:p]
       s0=theta0[(p+1)]
-      
+      #print(paste("s=",s0))
       
       r=(y-as.vector(x%*%beta0))/s0
       psi.vec<-psiHuber(r,k)
@@ -339,19 +324,16 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
       priv_grad_traj[iter+1]<-sqrt(sum(noisy_grad^2))
       
       #reset the hessian
-      #REWRITE THIS WITHOUT THE LOOP
       beta_hessian<-matrix(0,nrow=p,ncol=p)
       for(i in 1:n){
         beta_hessian<-beta_hessian+(abs(r[i])<k)*weightvec[i]*(x[i,]%o%x[i,])
       }
       beta_hessian<-beta_hessian/n
       
-      ##sample the noise for the hessian (which will just be 0's if private=F)
+      ##sample the noise for the hessian
       hessian_noisevec<-hessian_noise*rnorm(p*(p-1)/2)
       hessian_noisematrix<-matrix(0,nrow=p,ncol=p)
       hessian_noisematrix[upper.tri(hessian_noisematrix,diag=FALSE)]<-hessian_noisevec
-      ##reflect them across the diagonal to get a symmetric matrix,
-      ##and draw p-many more random normals to put on the diagonal itself
       hessian_noisematrix<-hessian_noisematrix+t(hessian_noisematrix)+diag(x=hessian_noise*rnorm(p),nrow=p)
       
       true_hessian<-matrix(nrow=p+1,ncol=p+1)
@@ -369,16 +351,14 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
       noisy_hessian[,(p+1)]<-lastrow
       noisy_hessian[(p+1),]<-lastrow
       
+
+      
       
       #check whether stopping conditions are met
-      if(stopping=="private"){
-        if(priv_grad_traj[iter+1]<=eps | min(eigen(noisy_hessian)$values)<1e-15){
+      if(stopping=="private" & priv_grad_traj[iter+1]<=eps){
           stop_flag<-1
-        }
-      }else if(stopping=="non-private"){
-        if(np_grad_traj[iter+1]<=eps | min(eigen(true_hessian)$values)<1e-15){
+      }else if(stopping=="non-private" & np_grad_traj[iter+1]<=eps){
           stop_flag<-1
-        }
       }
       
     }#end of while loop for iterations 
@@ -398,9 +378,6 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
       }
       
       outer_term<-outer_term/n #outer term as a matrix, we want the average
-      
-      
-      raw_hessian<-outer_term/s0 ### this is not private- should not use  for anything
       
       
       if(private==T) {outer_noise<-(mnorm^2)/(n*(mu/sqrt(3*maxiter+2)))}
@@ -467,8 +444,7 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
       
       corrected_variances<-(sandwich/n)+(var_correction)*stepsize^2
       
-      zscore_corrected<-(beta0[2]-1)/sqrt(corrected_variances[2,2])
-      zscore<-(beta0[2]-1)/sqrt((sandwich[2,2]/n))
+
     }
     
     
@@ -485,6 +461,7 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
   out$grad=grad
   out$nonpriv_converge=1*conv_np #convergence assessment based on non-private version of gradient
   out$priv_converge=1*conv_priv #convergence assessment based on private version of gradient  out$private=private
+  out$eig_min=eig_min
   out$noise=noise
   out$hess<-beta_hessian
   out$priv_gradtraj=priv_grad_traj
@@ -494,8 +471,6 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
   out$outer=outer_term
   out$sandwich=sandwich
   out$variances=corrected_variances
-  out$zscore_corrected=zscore_corrected
-  out$zscore=zscore
   }
   
   return(out)
