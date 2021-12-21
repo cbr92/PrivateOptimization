@@ -149,84 +149,6 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
     
     beta=beta0
     
-    if(suppress.inference==FALSE){
-    ## perform inference based on sandwich estimator
-    
-    ## compute estimate of "M" matrix and add noise to make private
-    ## using analyze gauss (gaussian wigner matrix) mechanism for M privacy
-    outer_term<-matrix(0,nrow=p,ncol=p)
-    
-    for(i in 1:n){
-      outer_term<-outer_term+(abs(r[i])<k)*weightvec[i]*(x[i,]%o%x[i,])
-    }
-    
-    outer_term<-outer_term/n #outer term as a matrix, we want the average
-    
-    
-    outer_noisevec<-outer_noise*rnorm(p*(p-1)/2)
-    
-    outer_noisematrix<-matrix(0,nrow=p,ncol=p)
-    outer_noisematrix[upper.tri(outer_noisematrix,diag=FALSE)]<-outer_noisevec
-    
-    #reflect them across the diagonal to get a symmetric matrix,
-    #and draw p-many more random normals to put on the diagonal itself
-    outer_noisematrix<-outer_noisematrix+t(outer_noisematrix)+diag(x=outer_noise*rnorm(p),nrow=p)
-    
-    outer_term<-outer_term+outer_noisematrix
-    
-    outer_term<-outer_term/s0 #finally, divide through by s0 (private estimate of it)
-    
-    
-    
-    ## next compute estimate of "Q" matrix and add noise  to make private
-    
-    
-    #draw a vector of (appropriately scaled) random normal variables
-    noisevec<-middle_noise*rnorm(p*(p-1)/2)
-    
-    #arrange them into the upper triangle of a matrix (leaving diagonal blank for now)
-    noisematrix<-matrix(0,nrow=p,ncol=p)
-    noisematrix[upper.tri(noisematrix,diag=FALSE)]<-noisevec
-    
-    #reflect them across the diagonal to get a symmetric matrix,
-    #and draw p-many more random normals to put on the diagonal itself
-    noisematrix<-noisematrix+t(noisematrix)+diag(x=middle_noise*rnorm(p),nrow=p)
-    
-    middle_term<-matrix(0,nrow=p,ncol=p)
-    
-    for(i in 1:n){
-      middle_term<-middle_term+(psiHuber(r[i],k)^2)*((weightvec[i])^2)*(x[i,]%o%x[i,])
-    }
-    
-    middle_term<-middle_term/n #we want an average
-    
-    middle_term<-middle_term+noisematrix #add the noise matrix to make private
-    
-    ## by definition Q should be positive definite; if adding noise causes
-    ## any eigenvalues to become negative, truncate those eigenvalues
-    ## to a small positive number
-    decomp<-eigen(middle_term)
-    
-    if(min(decomp$values)<0){
-      truncation<-1
-      lambda<-decomp$values
-      lambda[lambda<0]<-min(1/n,0.0001)
-      
-      middle_term<-(decomp$vectors)%*%diag(lambda)%*%solve(decomp$vectors)
-    }
-    
-    hessian_inverse<-solve(outer_term)
-
-    sandwich<-hessian_inverse%*%middle_term%*%t(hessian_inverse)
-
-    var_correction<-hessian_inverse%*%diag(grad_noise^2,nrow=p)%*%hessian_inverse
-
-    corrected_variances<-(sandwich/n)+(var_correction)*stepsize^2
-
-    
-    }
-    
-    
   }
   
   
@@ -363,7 +285,8 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
     beta=beta0
     s=s0
     
-    
+  }#end of "joint estimation" section
+  
     if(suppress.inference==FALSE){
       ## perform inference based on sandwich estimator
       
@@ -393,7 +316,7 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
       
       
       
-      ## next compute estimate of "Q" matrix and add noise  to make private
+      ## next compute estimate of "Q" matrix and add noise to make private
       
       
       #draw a vector of (appropriately scaled) random normal variables
@@ -442,7 +365,7 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
     }
     
     
-  }#end of "joint estimation" section
+  
   
   if(grad < eps) conv_np=T 
   if(sqrt(sum(noisy_grad^2)) < eps ) conv_priv=T 
