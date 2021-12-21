@@ -20,7 +20,7 @@ weightfn<-function(x,max.norm=sqrt(2)){
   return(min(1,(max.norm/norm(x,type="2"))^2))
 }
 
-NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,maxiter=100,eps=1e-10,beta0=rep(0,length(x[1,])),s0=1,s.min=0.01,stepsize=1,stopping=0,suppress.inference=FALSE,mnorm=sqrt(2)){
+NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,maxiter=100,eps=1e-10,beta0=rep(0,length(x[1,])),s0=1,stepsize=1,stopping=0,suppress.inference=FALSE,mnorm=sqrt(2)){
   
   #y is a vector of length n
   #x is an n by p matrix
@@ -29,18 +29,16 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
   
   if(k!=1.345)            fisher_beta = Fisher.constant(k)
   
-  noise=grad_noise=other_noise=middle_noise=outer_noise=hessian_noise=0 #gets updated further down if private=T
-  conv_np=conv_priv=F
+  grad_noise=other_noise=middle_noise=outer_noise=hessian_noise=0 #gets updated further down if private=T
+  conv_priv=F
   iter=0
-  grad=1
   middle_term<-NA
   outer_term<-NA
   sandwich<-NA
   var_correction<-NA
   stop_flag<-0
-  eig_min<-NA
   
-  np_grad_traj=priv_grad_traj=rep(NA,maxiter+1)
+  priv_grad_traj=rep(NA,maxiter+1)
   
   weightvec<-apply(x,1,weightfn,max.norm=mnorm)
   
@@ -73,11 +71,10 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
     
     s=s0
     
-    np_grad_traj[1]<-sqrt(sum((colMeans(psi.vec*weightvec*x)^2))) #tracks the evolution of non-noisy gradient (in L2 norm)
-    
+
     noisy_grad<-colMeans(psi.vec*weightvec*x)+grad_noise*rnorm(p)
-    priv_grad_traj[1]<-sqrt(sum(noisy_grad^2))
-    
+    priv_grad_traj[1]<-sqrt(sum(noisy_grad^2)) #tracks the evolution of the noisy gradient (in L2 norm)
+
     #initialize the hessian before starting newton iterations
     beta_hessian<-matrix(0,nrow=p,ncol=p)
     
@@ -100,16 +97,13 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
    
 
     
-    #check whether stopping conditions are met
-    if(stopping=="private" & priv_grad_traj[1]<=eps){
-      stop_flag<-1
-    }else if(stopping=="non-private" & np_grad_traj[1]<=eps){
-      stop_flag<-1
-    }
+   
     # this performs newton raphson to estimate beta
-    while(iter < maxiter & stop_flag < 1 & min(abs(eigen(noisy_hessian)$values))>1e-15 ){ #stop if hessian is computationally singular
+    while(iter < maxiter & sqrt(sum(noisy_grad^2)) > stopping*eps & min(abs(eigen(noisy_hessian)$values))>1e-15 ){ #stop if hessian is computationally singular
     
       iter=iter+1
+      
+      old_grad<-noisy_grad
     
       beta=beta0+stepsize*solve((noisy_hessian)/s0)%*%(noisy_grad)
       beta0=beta
@@ -132,18 +126,9 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
       hessian_noisematrix<-hessian_noisematrix+t(hessian_noisematrix)+diag(x=hessian_noise*rnorm(p),nrow=p)
       
       noisy_hessian<-beta_hessian+hessian_noisematrix
-      
-      grad=sqrt(sum((colMeans(psi.vec*weightvec*x)^2))) #this is the actual (norm of the) gradient evaluated at current value of beta0, NOT a noisy copy
-      np_grad_traj[iter+1]<-grad
+    
       noisy_grad<-colMeans(psi.vec*weightvec*x)+grad_noise*rnorm(p)
       priv_grad_traj[iter+1]<-sqrt(sum(noisy_grad^2))
-      
-      #check whether stopping conditions are met
-      if(stopping=="private" & priv_grad_traj[iter+1]<=eps){
-          stop_flag<-1
-      }else if(stopping=="non-private" & np_grad_traj[iter+1]<=eps){
-          stop_flag<-1
-      }
       
     }
     
@@ -169,8 +154,7 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
       eps=max(eps,grad_noise/2)
     }
     
-    grad<-sqrt(sum((colMeans(psi.vec*weightvec*x)^2))+(sum.chi^2))
-    np_grad_traj[1]<-grad
+
     
     noisy_grad<-c(colMeans(psi.vec*weightvec*x),sum.chi)+grad_noise*rnorm(p+1)
     priv_grad_traj[1]<-sqrt(sum(noisy_grad^2))
@@ -202,27 +186,14 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
     
     noisy_hessian[,(p+1)]<-lastrow
     noisy_hessian[(p+1),]<-lastrow
-    
-    true_hessian<-matrix(nrow=p+1,ncol=p+1)
-    true_hessian[1:p,1:p]<-beta_hessian
-    true_hessian[,(p+1)]<-c(mixed_partial,sum.chiprime)
-    true_hessian[(p+1),]<-c(mixed_partial,sum.chiprime)
-    
-    #check whether stopping conditions are met
-    if(stopping=="private" & priv_grad_traj[1]<=eps){
-        stop_flag<-1
-    }else if(stopping=="non-private" & np_grad_traj[1]<=eps){
-        stop_flag<-1
-    }
-    
-    eig_min<-min(eigen(true_hessian)$value)
-    
+
+  
     # this performs newton raphson to estimate beta
-    while(iter < maxiter & stop_flag < 1){ 
+    while(iter < maxiter & sqrt(sum(noisy_grad^2)) > stopping*eps & min(abs(eigen(noisy_hessian)$values))>1e-15 ){ 
       
       iter=iter+1
       
-      eig_min<-min(eigen(true_hessian)$value)
+      old_grad<-noisy_grad
       
       theta=theta0+stepsize*solve(noisy_hessian/s0)%*%noisy_grad
       theta0=theta
@@ -237,9 +208,7 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
       sum.chi=mean(((psiHuber(r,k)^2)-fisher_beta)*weightvec)/2
       sum.chiprime=mean((r^2)*(abs(r)<k)*weightvec)
       
-      grad<-sqrt(sum((colMeans(psi.vec*weightvec*x)^2))+(sum.chi^2))
-      np_grad_traj[iter+1]<-grad
-      
+
       noisy_grad<-c(colMeans(psi.vec*weightvec*x),sum.chi)+grad_noise*rnorm(p+1)
       priv_grad_traj[iter+1]<-sqrt(sum(noisy_grad^2))
       
@@ -256,32 +225,17 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
       hessian_noisematrix[upper.tri(hessian_noisematrix,diag=FALSE)]<-hessian_noisevec
       hessian_noisematrix<-hessian_noisematrix+t(hessian_noisematrix)+diag(x=hessian_noise*rnorm(p),nrow=p)
       
-      true_hessian<-matrix(nrow=p+1,ncol=p+1)
-      true_hessian[1:p,1:p]<-beta_hessian
-      
       noisy_hessian<-matrix(nrow=p+1,ncol=p+1)
       noisy_hessian[1:p,1:p]<-beta_hessian+hessian_noisematrix
       
       mixed_partial<-colMeans(psi2*weightvec*x) #the d(beta)d(sigma) elements of the full hessian
       lastrow<-c(mixed_partial,sum.chiprime)+other_noise*rnorm(p+1)
-      
-      true_hessian[,(p+1)]<-c(mixed_partial,sum.chiprime)
-      true_hessian[(p+1),]<-c(mixed_partial,sum.chiprime)
-      
+    
       noisy_hessian[,(p+1)]<-lastrow
       noisy_hessian[(p+1),]<-lastrow
       
-
       
-      
-      #check whether stopping conditions are met
-      if(stopping=="private" & priv_grad_traj[iter+1]<=eps){
-          stop_flag<-1
-      }else if(stopping=="non-private" & np_grad_traj[iter+1]<=eps){
-          stop_flag<-1
-      }
-      
-    }#end of while loop for iterations 
+    }
     beta=beta0
     s=s0
     
@@ -367,25 +321,21 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
     
   
   
-  if(grad < eps) conv_np=T 
+  
   if(sqrt(sum(noisy_grad^2)) < eps ) conv_priv=T 
   
   out=NULL
   out$beta=beta
   out$s=s
-  out$r=r
   out$iter=iter
-  out$grad=grad
-  out$nonpriv_converge=1*conv_np #convergence assessment based on non-private version of gradient
-  out$priv_converge=1*conv_priv #convergence assessment based on private version of gradient  out$private=private
-  out$eig_min=eig_min
+  out$grad=ifelse(iter<maxiter,noisy_grad,old_grad)
+  out$priv_converge=1*conv_priv #convergence assessment based on private version of gradient  
+  out$private=private
   out$noise=grad_noise
-  out$hess<-beta_hessian
-  out$priv_gradtraj=priv_grad_traj
-  out$nonpriv_gradtraj=np_grad_traj
+  out$priv_gradtraj=priv_grad_traj[1:maxiter]
   if(suppress.inference==FALSE){
-  out$middle=middle_term
-  out$outer=outer_term
+  out$Q=middle_term
+  out$M=outer_term
   out$sandwich=sandwich
   out$variances=corrected_variances
   }
