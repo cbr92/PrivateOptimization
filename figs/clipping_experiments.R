@@ -6,7 +6,7 @@
 #############################################
 #############################################
 
-source("/Users/caseybradshaw/Documents/privacy/clipped_gradient_descent.R")
+source("PrivateOptimization/src/extra/clipped_gradient_descent.R")
 
 
 #############################################
@@ -14,7 +14,7 @@ source("/Users/caseybradshaw/Documents/privacy/clipped_gradient_descent.R")
 #############################################
 
 
-source("/Users/caseybradshaw/Documents/privacy/NGD_linear_regression.R")
+source("PrivateOptimization/src/NGD_linear_regression.R")
 
 beta_gen=c(1.5,1,-1,0.5)
 ns=400
@@ -66,7 +66,7 @@ abline(h=beta_gen[2],col=2)
 #############################################
 
 
-source("/Users/caseybradshaw/Documents/privacy/private_logistic_regression.R")
+source("PrivateOptimization/src/private_logistic_regression.R")
 
 
 beta_gen=c(1.5,1,-1,0.5)
