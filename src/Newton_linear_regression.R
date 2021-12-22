@@ -51,8 +51,8 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
   sum.chiprime=mean((r^2)*(abs(r)<k)*weightvec)
   
   
-
-
+  
+  
   # Location estimation with known scale
   if(scale==F){
     
