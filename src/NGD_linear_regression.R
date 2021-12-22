@@ -47,7 +47,6 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
   truncation<-0
 
   priv_grad_traj=rep(NA,maxiter+1)
-  sigma_vec<-s0
 
   r=(y-as.vector(x%*%beta0))/s0
   psi.vec<-psiHuber(r,k)
@@ -80,6 +79,8 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
     # this performs gradient descent to estimate beta (if private=T, the gradient descent is noisy)
   while(iter < maxiter & sqrt(sum(noisy_grad^2)) > stopping*eps){
     iter=iter+1 
+    
+    old_grad<-noisy_grad
     
     beta=beta0+eta*noisy_grad
     beta0=beta
@@ -117,19 +118,18 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
 
       
     while(iter < maxiter & sqrt(sum(noisy_grad^2)) > stopping*eps*sign(s0) ){
-      iter=iter+1 
+      iter=iter+1
       
-      theta0=theta0+s0*eta*noisy_grad #this is with eta*noise
+      old_grad<-noisy_grad
+      
+      theta0=theta0+s0*eta*noisy_grad
       
       beta0=theta0[1:p]
-      
       s0=theta0[(p+1)]
-      sigma_vec<-c(sigma_vec,s0) #tracks the evolution of the scale estimate over iterations
       
       r=(y-as.vector(x%*%beta0))/s0
       
       psi.vec<-psiHuber(r,k)
-      
       sum.chi=mean(((psiHuber(r,k)^2)-fisher_beta)*weightvec)/2
       
       noisy_grad<-c(colMeans(psi.vec*weightvec*x),sum.chi)+noise*rnorm(p+1)
@@ -215,25 +215,25 @@ NGD.Huber <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1,m
   }     
   
   
-  #if(grad < eps) conv_np=T 
-  if(sqrt(sum(noisy_grad^2)) < eps) conv_priv=T      
+  final_grad<-ifelse(iter<maxiter,noisy_grad,old_grad) 
+  if(sqrt(sum(final_grad^2)) < eps) conv_priv=T   #convergence assessment based on private gradient   
     
   out=NULL
   out$beta=beta
   out$s=s
-  out$sigma_vec=sigma_vec
   out$iter=iter
-  out$priv_grad=sqrt(sum(noisy_grad^2)) #L2 norm of the private gradient
-  out$priv_gradtraj=priv_grad_traj
-  out$priv_converge=1*conv_priv #convergence assessment based on private version of gradient
+  out$grad=final_grad
+  out$gradtraj=priv_grad_traj[1:maxiter]
+  out$converge=1*conv_priv
   out$private=private
   out$noise=noise
   if(suppress.inference==FALSE){
-  out$Q=middle_term
-  out$M=outer_term
-  out$sandwich=sandwich
-  out$variances=corrected_variances
-  out$truncation=truncation}
+    out$Q=middle_term
+    out$M=outer_term
+    out$sandwich=sandwich
+    out$variances=corrected_variances
+    out$truncation=truncation
+  }
   
 
   return(out)
