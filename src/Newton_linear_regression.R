@@ -315,8 +315,8 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
       
 
     }
-    
-    
+  
+  
   final_grad<-ifelse(iter<maxiter,noisy_grad,old_grad)
   if(sqrt(sum(final_grad^2)) < eps ) conv_priv=T 
   
