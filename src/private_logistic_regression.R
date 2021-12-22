@@ -173,7 +173,7 @@ Newton_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)
   eta<-ifelse(is.null(stepsize),1,stepsize) #perform pure newton unless otherwise specified
  
   if(private==T){
-    noise<-2*sqrt(2)/(n*(mu/sqrt(2*maxiter+2))) #noise for the gradient
+    noise<-2*mnorm/(n*(mu/sqrt(2*maxiter+2))) #noise for the gradient
     hessian_noise<-((mnorm^2)/4)/(n*(mu/sqrt(2*maxiter+2))) #calculated at every iteration
     outer_noise<-((mnorm^2)/4)/(n*(mu/sqrt(2*maxiter+2))) #calculated only once
     middle_noise<-(mnorm^2)/(n*(mu/sqrt(2*maxiter+2)))  #calculated only once
@@ -290,7 +290,7 @@ Newton_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)
     
   }
   final_grad<-ifelse(iter<maxiter,noisy_grad,old_grad)
-  if( sqrt(sum(final_grad^2)) < eps) conv=T
+  if(sqrt(sum(final_grad^2)) < eps) conv=T
   
   out=NULL
   out$beta=beta
