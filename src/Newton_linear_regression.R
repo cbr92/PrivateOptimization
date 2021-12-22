@@ -36,7 +36,7 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
   outer_term<-NA
   sandwich<-NA
   var_correction<-NA
-  stop_flag<-0
+  truncation<-0
   
   priv_grad_traj=rep(NA,maxiter+1)
   
@@ -51,8 +51,6 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
   sum.chiprime=mean((r^2)*(abs(r)<k)*weightvec)
   
   
-
-
   
   
   # Location estimation with known scale
@@ -319,16 +317,14 @@ NoisyNewton <- function(x,y,k=1.345,fisher_beta=0.7101645,scale=T,private=T,mu=1
     }
     
     
-  
-  
-  
-  if(sqrt(sum(noisy_grad^2)) < eps ) conv_priv=T 
+  final_grad<-ifelse(iter<maxiter,noisy_grad,old_grad)
+  if(sqrt(sum(final_grad^2)) < eps ) conv_priv=T 
   
   out=NULL
   out$beta=beta
   out$s=s
   out$iter=iter
-  out$grad=ifelse(iter<maxiter,noisy_grad,old_grad)
+  out$grad=final_grad
   out$priv_converge=1*conv_priv #convergence assessment based on private version of gradient  
   out$private=private
   out$noise=grad_noise
