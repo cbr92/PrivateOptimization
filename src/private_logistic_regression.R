@@ -27,7 +27,6 @@ weightfn<-function(x,max.norm=sqrt(2)){
 NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]),stopping=0,stepsize=NULL,mnorm=sqrt(2),suppress.inference=FALSE){
   n=length(x[,1])
   p=length(x[1,])
-  grad<-1
   iter<-0
   conv=F
   noise<-0
@@ -38,18 +37,24 @@ NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]
   
   GS<-2*mnorm
   eta<-ifelse(is.null(stepsize),(4/(mnorm^2))-0.001,stepsize) #step size
-  if(private==T){noise<-GS/(n*(mu/sqrt(maxiter+2)))} #the +2 is needed to get inference (M and Q) within the total mu privacy budget
+  if(private==T){
+    noise<-GS/(n*(mu/sqrt(maxiter+2))) #the +2 is needed to get inference (M and Q) within the total mu privacy budget
+    outer_noise<-((mnorm^2)/4)/(n*(mu/sqrt(maxiter+2)))
+    middle_noise<-(mnorm^2)/(n*(mu/sqrt(maxiter+2)))
+  }
   eps=max(eps,noise)
   
-  while(grad>stopping*eps & iter<maxiter){
+  noisy_grad<-colMeans(diffs*weightvec*x)+noise*rnorm(p)
+  while(sqrt(sum(noisy_grad^2)) > stopping*eps & iter < maxiter){
     iter<-iter+1
+    old_grad<-noisy_grad
     
-    beta<-beta0+eta*(colMeans(diffs*weightvec*x)+noise*rnorm(p))
+    beta<-beta0+eta*noisy_grad
     beta0<-beta
     yhat<-invlogit(as.vector(x%*%beta0))
     diffs<-y-yhat
     
-    grad=sqrt(sum(colMeans(diffs*weightvec*x)^2))
+    noisy_grad<-colMeans(diffs*weightvec*x)+noise*rnorm(p)
   }
   beta<-beta0
   
@@ -65,10 +70,7 @@ NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]
     }
     
     outer_term<-outer_term/n #outer term as a matrix, we want the average
-    
-    
-    if(private==T) {outer_noise<-((mnorm^2)/4)/(n*(mu/sqrt(maxiter+2)))} ###CHANGE THIS
-    
+        
     outer_noisevec<-outer_noise*rnorm(p*(p-1)/2)
     
     outer_noisematrix<-matrix(0,nrow=p,ncol=p)
@@ -84,9 +86,7 @@ NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]
     ## next compute estimate of "Q" matrix and add noise  to make private
     
     
-    #draw a vector of (appropriately scaled) random normal variables
-    if(private==T) {middle_noise<-(mnorm^2)/(n*(mu/sqrt(maxiter+2)))}
-    
+    #draw a vector of (appropriately scaled) random normal variables    
     noisevec<-middle_noise*rnorm(p*(p-1)/2)
     
     #arrange them into the upper triangle of a matrix (leaving diagonal blank for now)
@@ -124,18 +124,18 @@ NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]
     
     corrected_variances<-(sandwich/n)+(noise^2)*diag(p)*(eta^2) #values on the diagonal of this matrix are corrected variances for the components of the beta vector
   }
-  
-  if( grad < eps) conv=T
+  final_grad<-ifelse(iter<maxiter,noisy_grad,old_grad)
+  if( sqrt(sum(final_grad^2)) < eps) conv=T
   
   out=NULL
   out$beta=beta
   out$iter=iter
   out$converge=1*conv
   out$private=private
-  out$grad=grad
+  out$grad=final_grad
   if(suppress.inference==FALSE){
-    out$middle=middle_term
-    out$outer=outer_term
+    out$Q=middle_term
+    out$M=outer_term
     out$sandwich=sandwich
     out$variances=corrected_variances
     out$truncation=truncation
