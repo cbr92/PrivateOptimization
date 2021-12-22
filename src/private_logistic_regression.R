@@ -27,9 +27,11 @@ weightfn<-function(x,max.norm=sqrt(2)){
 NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]),stopping=0,stepsize=NULL,mnorm=sqrt(2),suppress.inference=FALSE){
   n=length(x[,1])
   p=length(x[1,])
+  
   iter<-0
+  truncation<-0
   conv=F
-  noise<-0
+  noise=outer_noise=middle_noise=0
   
   yhat<-invlogit(as.vector(x%*%beta0))
   diffs<-y-yhat
@@ -41,11 +43,12 @@ NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]
     noise<-GS/(n*(mu/sqrt(maxiter+2))) #the +2 is needed to get inference (M and Q) within the total mu privacy budget
     outer_noise<-((mnorm^2)/4)/(n*(mu/sqrt(maxiter+2)))
     middle_noise<-(mnorm^2)/(n*(mu/sqrt(maxiter+2)))
+    eps=max(eps,noise)
   }
-  eps=max(eps,noise)
   
   noisy_grad<-colMeans(diffs*weightvec*x)+noise*rnorm(p)
-  while(sqrt(sum(noisy_grad^2)) > stopping*eps & iter < maxiter){
+  
+  while(iter < maxiter & sqrt(sum(noisy_grad^2)) > stopping*eps){
     iter<-iter+1
     old_grad<-noisy_grad
     
@@ -156,11 +159,11 @@ NGD_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]
 Newton_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)[2]),stopping=0,stepsize=NULL,mnorm=sqrt(2),suppress.inference=FALSE){
   n=length(x[,1])
   p=length(x[1,])
-  grad<-1
+  
   iter<-0
+  truncation<-0
   conv=F
-  noise<-0
-  hessian_noise<-0
+  noise=hessian_noise=outer_noise=middle_noise=0
   
   yhat<-invlogit(as.vector(x%*%beta0))
   diffs<-y-yhat
@@ -170,17 +173,46 @@ Newton_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)
   eta<-ifelse(is.null(stepsize),1,stepsize) #perform pure newton unless otherwise specified
  
   if(private==T){
-    noise<-2*sqrt(2)/(n*(mu/sqrt(2*maxiter))) #noise for the gradient
-    hessian_noise<-((mnorm^2)/4)/(n*(mu/sqrt(2*maxiter)))
-    }
-  eps=max(eps,noise)
+    noise<-2*sqrt(2)/(n*(mu/sqrt(2*maxiter+2))) #noise for the gradient
+    hessian_noise<-((mnorm^2)/4)/(n*(mu/sqrt(2*maxiter+2))) #calculated at every iteration
+    outer_noise<-((mnorm^2)/4)/(n*(mu/sqrt(2*maxiter+2))) #calculated only once
+    middle_noise<-(mnorm^2)/(n*(mu/sqrt(2*maxiter+2)))  #calculated only once
+    eps=max(eps,noise)
+  }
+  
+  noisy_grad<-colMeans(diffs*weightvec*x)+noise*rnorm(p)
   
   beta_hessian<-matrix(0,nrow=p,ncol=p)
   for(i in 1:n){beta_hessian<-beta_hessian+weightvec[i]*hessian_coefs[i]*(x[i,]%o%x[i,])}
   beta_hessian<-beta_hessian/n 
   
-  while(grad>stopping*eps & iter<maxiter & min(eigen(beta_hessian)$values)>1e-15){
+  ##sample the noise for the hessian (which will just be 0's if private=F)
+  hessian_noisevec<-hessian_noise*rnorm(p*(p-1)/2)
+  hessian_noisematrix<-matrix(0,nrow=p,ncol=p)
+  hessian_noisematrix[upper.tri(hessian_noisematrix,diag=FALSE)]<-hessian_noisevec
+  ##reflect them across the diagonal to get a symmetric matrix,
+  ##and draw p-many more random normals to put on the diagonal itself
+  hessian_noisematrix<-hessian_noisematrix+t(hessian_noisematrix)+diag(x=hessian_noise*rnorm(p),nrow=p)
+    
+  noisy_hessian<-beta_hessian+hessian_noisematrix
+  
+  while(iter < maxiter & sqrt(sum(noisy_grad^2)) > stopping*eps & min(abs(eigen(noisy_hessian)$values))>1e-15){ #stop if hessian is computationally singular
     iter<-iter+1
+    
+    old_grad<-noisy_grad 
+    
+    beta<-beta0+eta*solve(noisy_hessian)%*%(noisy_grad)
+    beta0<-beta
+    
+    yhat<-invlogit(as.vector(x%*%beta0))
+    diffs<-y-yhat
+    hessian_coefs<-yhat*(1-yhat)
+    
+    
+    #reset the hessian
+    beta_hessian<-matrix(0,nrow=p,ncol=p)
+    for(i in 1:n){beta_hessian<-beta_hessian+weightvec[i]*hessian_coefs[i]*(x[i,]%o%x[i,])}
+    beta_hessian<-beta_hessian/n
     
     ##sample the noise for the hessian (which will just be 0's if private=F)
     hessian_noisevec<-hessian_noise*rnorm(p*(p-1)/2)
@@ -192,29 +224,7 @@ Newton_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)
     
     noisy_hessian<-beta_hessian+hessian_noisematrix
     
-    #### QUESTION: does truncating the eigenvalues of the noisy hessian help with the divergence problem?
-    decomp<-eigen(noisy_hessian)
-    if(min(decomp$values)<0){
-      truncation<-1
-      lambda<-decomp$values
-      lambda[lambda<0]<-min(1/n,0.001)
-      
-      noisy_hessian<-(decomp$vectors)%*%diag(lambda)%*%solve(decomp$vectors)
-    }
-    
-    beta<-beta0+solve(noisy_hessian)%*%(colMeans(diffs*weightvec*x)+noise*rnorm(p))
-    beta0<-beta
-    yhat<-invlogit(as.vector(x%*%beta0))
-    diffs<-y-yhat
-    hessian_coefs<-yhat*(1-yhat)
-    
-    
-    #reset the hessian
-    beta_hessian<-matrix(0,nrow=p,ncol=p)
-    for(i in 1:n){beta_hessian<-beta_hessian+weightvec[i]*hessian_coefs[i]*(x[i,]%o%x[i,])}
-    beta_hessian<-beta_hessian/n
-    
-    grad=sqrt(sum(colMeans(diffs*weightvec*x)^2))
+    noisy_grad<-colMeans(diffs*weightvec*x)+noise*rnorm(p)
     
   }
   beta<-beta0
@@ -224,9 +234,7 @@ Newton_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)
     
     ## compute estimate of "M" matrix and add noise to make private
     ## using analyze gauss (gaussian wigner matrix) mechanism for M privacy
-    
-    if(private==T) {outer_noise<-((mnorm^2)/4)/(n*(mu/sqrt(maxiter+2)))}
-    
+       
     outer_noisevec<-outer_noise*rnorm(p*(p-1)/2)
     
     outer_noisematrix<-matrix(0,nrow=p,ncol=p)
@@ -239,12 +247,10 @@ Newton_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)
     outer_term<-beta_hessian+outer_noisematrix
     
     
-    ## next compute estimate of "Q" matrix and add noise  to make private
+    ## next compute estimate of "Q" matrix and add noise to make private
     
     
     #draw a vector of (appropriately scaled) random normal variables
-    if(private==T) {middle_noise<-(mnorm^2)/(n*(mu/sqrt(maxiter+2)))}
-    
     noisevec<-middle_noise*rnorm(p*(p-1)/2)
     
     #arrange them into the upper triangle of a matrix (leaving diagonal blank for now)
@@ -279,22 +285,22 @@ Newton_logistic<-function(x,y,private=F,mu=1,maxiter,eps=1e-5,beta0=rep(0,dim(x)
     }
     
     hessian_inverse<-solve(outer_term)
-    sandwich<-solve(outer_term)%*%middle_term%*%t(solve(outer_term))
+    sandwich<-hessian_inverse%*%middle_term%*%t(hessian_inverse)
     corrected_variances<-(sandwich/n)+(hessian_inverse%*%diag(noise^2,nrow=p)%*%hessian_inverse)*(eta^2)
     
   }
-  
-  if( grad < eps) conv=T
+  final_grad<-ifelse(iter<maxiter,noisy_grad,old_grad)
+  if( sqrt(sum(final_grad^2)) < eps) conv=T
   
   out=NULL
   out$beta=beta
   out$iter=iter
   out$converge=1*conv
   out$private=private
-  out$grad=grad
+  out$grad=final_grad
   if(suppress.inference==FALSE){
-    out$middle=middle_term
-    out$outer=outer_term
+    out$Q=middle_term
+    out$M=outer_term
     out$sandwich=sandwich
     out$variances=corrected_variances
     out$truncation=truncation
