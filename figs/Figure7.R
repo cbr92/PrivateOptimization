@@ -6,7 +6,7 @@ beta_gen=c(1,1,1,1)
 s0=2
 n<-1000
 
-set.seed(357)
+set.seed(505)
 x=matrix(rnorm(n*4,mean=0,sd=2),nrow=n)
 x[,1]<-rep(1,n)
 y=as.vector(x%*%beta_gen+rnorm(n,mean=0,sd=s0))

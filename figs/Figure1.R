@@ -6,7 +6,7 @@ s0=2
 n=1000
 
 
-set.seed(9962)
+set.seed(9964)
 x=matrix(rnorm(n*4,mean=0,sd=s0),nrow=n)
 x[,1]<-rep(1,n)
 y=as.vector(x%*%beta_gen+rnorm(n,mean=0,sd=s0))

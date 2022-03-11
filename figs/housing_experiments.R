@@ -78,7 +78,7 @@ rm(housing,scaled.housingmat)
 ##########    2.    #########################
 #############################################
 
-source("/Users/caseybradshaw/Documents/privacy/NGD_linear_regression.R")
+source("PrivateOptimization/src/NGD_linear_regression.R")
 set.seed(929)
 housereg<-NGD.Huber(x=xmat,y=yvec,private=T,scale=T,mu=0.25,maxiter=100,beta0=rep(0,8),stopping=0,mnorm=sqrt(2))
 
@@ -177,14 +177,15 @@ legend("bottomleft",pch=c(1,2,3),col=c(1,1,1),legend=c("Intercept","County indic
 ##########    4.    #########################
 #############################################
 
+n<-dim(xmat)[1]
+p<-dim(xmat)[2]
 
 BETA<-NGD.Huber(x=xmat,y=yvec,private=F,scale=T,maxiter=10000,beta0=rep(0,p))
 BETA<-BETA$beta
 N<-c(500,750,1000,2000,5000,10000,15000)
 ns<-400
 
-n<-dim(xmat)[1]
-p<-dim(xmat)[2]
+
 
 
 betas_private=betas_np=matrix(nrow=ns,ncol=length(N))
