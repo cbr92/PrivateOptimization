@@ -6,7 +6,7 @@
 #############################################
 #############################################
 
-source("PrivateOptimization/src/extra/clipped_gradient_descent.R")
+source("src/extra/clipped_gradient_descent.R")
 
 
 #############################################
@@ -14,7 +14,7 @@ source("PrivateOptimization/src/extra/clipped_gradient_descent.R")
 #############################################
 
 
-source("PrivateOptimization/src/NGD_linear_regression.R")
+source("src/NGD_linear_regression.R")
 
 beta_gen=c(1.5,1,-1,0.5)
 ns=400
@@ -66,7 +66,7 @@ abline(h=beta_gen[2],col=2)
 #############################################
 
 
-source("PrivateOptimization/src/private_logistic_regression.R")
+source("src/private_logistic_regression.R")
 
 
 beta_gen=c(1.5,1,-1,0.5)

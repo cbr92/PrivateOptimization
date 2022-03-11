@@ -1,4 +1,4 @@
-source("PrivateOptimization/src/extra/Newton_linear_regression_extra.R")
+source("src/extra/Newton_linear_regression_extra.R")
 
 n<-1000
 beta_gen=c(1,1,1,1)

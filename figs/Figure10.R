@@ -1,4 +1,4 @@
-source("PrivateOptimization/src/extra/NGD_linear_regression_extra.R")
+source("src/extra/NGD_linear_regression_extra.R")
 
 
 library(MASS) #for drawing samples from a multivariate normal distribution
@@ -71,6 +71,10 @@ for(i in 1:ns){
 ellipse23<-ellipse(covmat23,centre=center23)
 ellipse23NC<-ellipse(covmat23NC,centre=center23)
 
+
+##########################################
+### THIS IS NOT THE PLOT IN THE PAPER#####
+##########################################
 par(mfrow=c(1,1))
 plot(betamat[,2],betamat[,3],xlim=c(0.7,1.3),ylim=c(0.7,1.25),xlab=expression(paste(beta)[2]),ylab=expression(paste(beta)[3]), main=expression(paste("1-GDP Estimates of (",beta[2],",",beta[3],")")),pch="*")
 lines(ellipse23[,1],ellipse23[,2],col=2)
@@ -83,10 +87,11 @@ legend("bottomleft",legend=c("True parameter value","Avg 95% Conf Region, correc
 
 
 
-############################################################
-#### consider replacing the above with a version that 
-#### does not utilize non-private stopping rule
-############################################################
+################################################################
+#### this version uses a PRIVATE stopping rule, unlike the above
+####    THIS ***IS*** THE PLOT IN THE PAPER      ###############
+################################################################
+
 covmat23=covmat23NC=matrix(0,nrow=2,ncol=2)
 center23<-rep(0,2)
 betamat<-matrix(NA,nrow=ns,ncol=p)

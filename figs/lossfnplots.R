@@ -69,7 +69,7 @@ SCloss2deriv<-function(v,c=1){
 #############################################
 ##################   3   ####################
 #############################################
-source("Users/caseybradshaw/Documents/privacy/SmoothedHuber.R")
+source("src/SmoothedHuber.R")
 
 x<-seq(from=-2,to=2,by=0.01)
 

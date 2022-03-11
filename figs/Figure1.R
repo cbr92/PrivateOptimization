@@ -1,4 +1,4 @@
-source("NGD_linear_regression_extra.R")
+source("src/extra/NGD_linear_regression_extra.R")
 
 
 beta_gen=c(1,1,1,1)

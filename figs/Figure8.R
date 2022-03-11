@@ -1,4 +1,4 @@
-source("PrivateOptimization/src/extra/self_concordant_optimization.R")
+source("src/extra/self_concordant_optimization.R")
 
 beta_gen=c(10,-11,9,-11)
 s0=2

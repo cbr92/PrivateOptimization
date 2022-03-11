@@ -78,7 +78,7 @@ rm(housing,scaled.housingmat)
 ##########    2.    #########################
 #############################################
 
-source("PrivateOptimization/src/NGD_linear_regression.R")
+source("src/NGD_linear_regression.R")
 set.seed(929)
 housereg<-NGD.Huber(x=xmat,y=yvec,private=T,scale=T,mu=0.25,maxiter=100,beta0=rep(0,8),stopping=0,mnorm=sqrt(2))
 

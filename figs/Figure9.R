@@ -1,4 +1,4 @@
-source("NGD_linear_regression_extra.R")
+source("src/extra/NGD_linear_regression_extra.R")
 
 coverage_calculator<-function(v){
   return(mean(abs(v)<qnorm(0.975)))
