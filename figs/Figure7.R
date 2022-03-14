@@ -12,9 +12,9 @@ x[,1]<-rep(1,n)
 y=as.vector(x%*%beta_gen+rnorm(n,mean=0,sd=s0))
 
 #non-private algorithms
-outNP<-NoisyNewton(x=x,y=y,private=F,scale=F,s0=2,beta0=c(-0.1,0.1,-0.1,0.1),stopping=0,suppress.inference=TRUE)
-out25NP<-NoisyNewton(x=x,y=y,private=F,scale=F,s0=2,stepsize=0.25,beta0=c(-0.1,0.1,-0.1,0.1),stopping=0,suppress.inference=TRUE)
-gdNP<-NGD.Huber(x=x,y=y,private=F,scale=F,s0=2,beta0=c(-0.1,0.1,-0.1,0.1),stopping=0,suppress.inference=TRUE)
+outNP<-NoisyNewton(x=x,y=y,private=F,scale=F,s0=2,stopping=0,suppress.inference=TRUE)
+out25NP<-NoisyNewton(x=x,y=y,private=F,scale=F,s0=2,stepsize=0.25,stopping=0,suppress.inference=TRUE)
+gdNP<-NGD.Huber(x=x,y=y,private=F,scale=F,s0=2,stopping=0,suppress.inference=TRUE)
 
 #private algorithms
 outDP<-NoisyNewton(x=x,y=y,private=T,mu=2*sqrt(101/11),scale=F,s0=2,stopping=0,suppress.inference=TRUE)
