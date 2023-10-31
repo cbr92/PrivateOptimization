@@ -23,7 +23,7 @@
 ##    Availability: <https://www.dropbox.com/s/aakaj0m32vkiqzf/Archive.zip?dl=0>;
 ##                  <http://www.stat.cmu.edu/~jinglei/code.shtml>
 #############################################
-#load("/Users/caseybradshaw/Dropbox/Privacy:Casey/R code/code_Lei/housing.Rda") #data set
+#load("~/Dropbox/Privacy:Casey/R code/code_Lei/housing.Rda") #data set
 
 #housing.raw <- housing
 #remove the variables we aren't going to use
@@ -57,7 +57,7 @@
 #housing<-data.frame(priv.data$price,housing_mat[,2:8])
 #save(housing,file="housing_data_2.Rdata")
 
-load("/Users/caseybradshaw/Documents/privacy/housing_data_2.Rdata")
+load("~/Documents/privacy/housing_data_2.Rdata")
 
 #### center numeric variables around their median and divide by their median absolute deviation
 

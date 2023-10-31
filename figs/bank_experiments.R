@@ -20,7 +20,7 @@
 
 
 
-bank<-read.csv("/Users/caseybradshaw/Downloads/bank/bank-full.csv")
+bank<-read.csv("~/Downloads/bank/bank-full.csv")
 
 bank<-bank[,names(bank) != "pdays"] #this  variable is technically undefined for over  80% of entries
 
